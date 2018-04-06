@@ -1,12 +1,11 @@
 import os
-import matplotlib.pyplot as plt
 import numpy as np
 import scipy.signal
 
 
 class Connect4(object):
 
-	def __init__(self, n_rows=6, n_columns=7, win_streak=4, render=False):
+	def __init__(self, n_rows=6, n_columns=7, win_streak=4):
 
 		self.n_rows = n_rows
 		self.n_columns = n_columns
@@ -22,11 +21,6 @@ class Connect4(object):
 			d1_win_kernel[i,i] = 1
 			d2_win_kernel[i, win_streak-i-1] = 1
 		self.win_kernels = [h_win_kernel, v_win_kernel, d1_win_kernel, d2_win_kernel]
-
-		if render:
-			self.fig, self.ax = plt.subplots(1, 1, figsize=(8, 8))
-			self.plot = self.ax.imshow(self.grid)
-			self.update_plot()
 
 	def make_move(self, player_id, column, imaginary=False):
 		"""Places a piece of the player's color in the given column"""
@@ -48,7 +42,7 @@ class Connect4(object):
 
 		if not imaginary:
 			self.grid = next_grid
-
+		print(next_grid)
 		return next_grid
 
 	def get_valid_moves(self):
@@ -85,27 +79,6 @@ class Connect4(object):
 	def print_grid(self):
 		print(self.grid, "\n")
 
-	def update_plot(self):
-		self.plot.set_data(self.grid)
-		plt.pause(0.1)
-
-		"""
-		inset = u // 8
-	    pad = u // 2
-	    width = seq_len * u + 2 * pad
-	    height = seq_width * u + 2 * pad
-	    im = Image.new('L', (width, height))
-	    draw = ImageDraw.ImageDraw(im)
-	    draw.rectangle([0, 0, width, height], fill=250)
-	    for i in range(seq_len):
-	        for j in range(seq_width):
-	            val = 1 - y[i, 0, j].data[0]
-	            draw.rectangle([pad + i*u + inset,
-	                            pad + j*u + inset,
-	                            pad + (i+1)*u - inset,
-	                            pad + (j+1)*u - inset], fill=cmap(val))
-		"""
-
 
 if __name__ == "__main__":
 
@@ -119,7 +92,6 @@ if __name__ == "__main__":
 		a = int(input("Your move : "))
 		game.make_move(1, a)
 		game.print_grid()
-		game.update_plot()
 
 		if game.check_win(1):
 			print("Congratulations! You have won!")
@@ -130,7 +102,6 @@ if __name__ == "__main__":
 		a_id = np.random.randint(len(A_s))
 		game.make_move(2, A_s[a_id])
 		game.print_grid()
-		game.update_plot()
 
 		if game.check_win(2):
 			print("Player 2 have won. You got beaten by a random bot...")
