@@ -42,7 +42,7 @@ class Connect4(object):
 
 		if not imaginary:
 			self.grid = next_grid
-		print(next_grid)
+
 		return next_grid
 
 	def get_valid_moves(self):
@@ -68,7 +68,6 @@ class Connect4(object):
 			has_won = np.any(win_mask >= self.win_streak)
 			
 			if has_won:
-				print("Kernel that got activated : ", kernel)
 				break
 
 		return has_won
@@ -77,12 +76,29 @@ class Connect4(object):
 		self.grid = np.zeros(shape=(self.n_rows, self.n_columns))
 
 	def print_grid(self):
-		print(self.grid, "\n")
+		top = '_' * (self.n_columns+2)
+		print(top)
+		for i in range(self.n_rows):
+			row = '|'
+			for j in range(self.n_columns):
+				if self.grid[i,j] == 0:
+					row += ' '
+				elif self.grid[i,j] == 1:
+					row += '\u25CF'
+				elif self.grid[i,j] == 2:
+					row += '\u25CB'
+				else:
+					raise ValueError("Irregular value in 'self.grid' : {}".format(self.grid))
+			print(row + '|')
+		bottom = '\u2588' * (self.n_columns+2) # '\u203E'
+		print(bottom)
+		print(' 0123456 ')
+		print("\n")
 
 
 if __name__ == "__main__":
 
-	game = Connect4(render=True)
+	game = Connect4()
 
 	while 1:
 
