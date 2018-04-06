@@ -3,7 +3,48 @@ import numpy as np
 import scipy.signal
 
 
+class Connect4Environment(object):
+	"""A class that wraps around the Connect4 game engine to accomodate a RL agent"""
+
+	def __init__(self):
+
+		self.game = Connect4()
+
+	def get_state(self):
+		"""Transform matrix grid representation into a 3D state of one-hot vectors (n_rows x n_columns x 3)"""
+		pass
+
+	def step(self, action):
+		"""Makes a move in the environment that leads to a reward and a next state"""
+
+		next_state = self.game.make_move(action, imaginary=False) # the state of the world is effectively modified
+		reward = int(self.game.check_win(1))
+
+		return next_state, reward
+
+	def get_successors(self):
+		"""Returns a list of tuples containing afterstates and actions that leads to those afterstates"""
+
+		afterstates = [] # list of tuples (successor, action)
+		valid_actions = self.game.get_valid_moves()
+		
+		for action in valid_actions:
+			successor = self.game.make_move(action, imaginary=True) # the state of the world won't be modified (here we only simulate)
+			successor_state = self.get_state(successor)
+			afterstates.append((successor_state, action))
+
+		return afterstates
+
+	def reset():
+		"""Resets the environment"""
+		self.game.reset()
+
+	def render():
+		pass
+
+
 class Connect4(object):
+	"""Our game engine"""
 
 	def __init__(self, n_rows=6, n_columns=7, win_streak=4):
 
