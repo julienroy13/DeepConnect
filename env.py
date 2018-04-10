@@ -79,11 +79,11 @@ class Connect4Environment(object):
 
 		return afterstates
 
-	def reset():
+	def reset(self):
 		"""Resets the environment"""
 		self.game.reset()
 
-	def render():
+	def render(self):
 		pass # Not implemented yet
 
 
