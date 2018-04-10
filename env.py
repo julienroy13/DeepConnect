@@ -2,6 +2,7 @@ import os
 import numpy as np
 import scipy.signal
 import pdb
+import time
 
 
 class Connect4Environment(object):
@@ -100,8 +101,16 @@ class Connect4(object):
 		self.n_rows = n_rows
 		self.n_columns = n_columns
 		self.win_streak = win_streak
+
+		# Initializes grid
 		self.grid = np.zeros(shape=(n_rows, n_columns), dtype=np.int)
 		self.turn = 1 # Player 1 starts the game
+		
+		# Termination info
+		self.over = False
+		self.win_type = None # String
+		self.win_indices = [] # Indices of winning line
+		self.winner = None # Either 1 or 2
 
 		# Creates kernels to check the different winning conditions
 		h_win_kernel = np.ones(shape=(1, win_streak)) # horizontal win
@@ -111,7 +120,7 @@ class Connect4(object):
 		for i in range(win_streak):
 			d1_win_kernel[i,i] = 1
 			d2_win_kernel[i, win_streak-i-1] = 1
-		self.win_kernels = [h_win_kernel, v_win_kernel, d1_win_kernel, d2_win_kernel]
+		self.win_kernels = [(h_win_kernel, "horizontal"), (v_win_kernel, "vertical"), (d1_win_kernel, "diagonal1"), (d2_win_kernel, "diagonal2")]
 
 	def make_move(self, player_id, column, imaginary=False):
 		"""Places a piece of the player's color in the given column"""
@@ -163,19 +172,51 @@ class Connect4(object):
 
 		# Only keeps the position of the player's pieces we are concerned with
 		player_pieces = (self.grid == player_id)
-		for kernel in self.win_kernels:
+		for kernel, win_type in self.win_kernels:
 
 			# Convolves the grid with the wining condition kernels
 			win_mask = scipy.signal.convolve2d(player_pieces, kernel, mode="full")
 			has_won = np.any(win_mask >= self.win_streak)
 			
 			if has_won:
+				self.over = True
+				self.winner = player_id
+				self.win_type = win_type
+				self.win_indices = self.get_win_indices(win_mask, win_type)
 				break
 
 		return has_won
 
+	def get_win_indices(self, win_mask, win_type):
+		i, j = np.unravel_index(np.argmax(win_mask), win_mask.shape)
+		win_indices = []
+
+		if win_type == 'horizontal':
+			for k in range(self.win_streak):
+				win_indices.append((i, j-k))
+
+		elif win_type == 'vertical':
+			for k in range(self.win_streak):
+				win_indices.append((i-k, j))
+
+		elif win_type == 'diagonal1':
+			for k in range(self.win_streak):
+				win_indices.append((i-k, j-k))
+
+		elif win_type == 'diagonal2':
+			for k in range(self.win_streak):
+				win_indices.append((i-k, j-self.win_streak+1+k))
+
+		return win_indices
+
+
 	def reset(self):
 		self.grid = np.zeros(shape=(self.n_rows, self.n_columns))
+		self.turn = 1 # Player 1 starts the game
+		self.over = False
+		self.win_type = None # String
+		self.win_indices = [] # Indices of winning line
+		self.winner = None # Either 1 or 2
 
 	def print_grid(self):
 		top = '_' * (self.n_columns+2)
@@ -205,7 +246,7 @@ if __name__ == "__main__":
 	if option == '1':
 		game = Connect4()
 
-		while 1:
+		while not game.over:
 
 			# Player moves
 			a = int(input("Your move : "))
@@ -214,7 +255,6 @@ if __name__ == "__main__":
 
 			if game.check_win(1):
 				print("Congratulations! You have won!")
-				break
 
 			# Random move from opponent
 			A_s = game.get_valid_moves()
@@ -224,14 +264,13 @@ if __name__ == "__main__":
 
 			if game.check_win(2):
 				print("Player 2 have won. You got beaten by a random bot...")
-				break
 
 		print("GAME OVER")
 
 	elif option == '2':
 		env = Connect4Environment()
 
-		while 1:
+		while not game.over:
 
 			# Player moves
 			afterstates = env.get_successors()
@@ -241,11 +280,9 @@ if __name__ == "__main__":
 
 			if env.game.check_win(1):
 				print("Congratulations! You have won!")
-				break
 
 			if env.game.check_win(2):
 				print("Player 2 have won. You got beaten by a random bot...")
-				break
 
 		pdb.set_trace() # easier to inspect stuff manually than print everything in the console
 		print("GAME OVER")
