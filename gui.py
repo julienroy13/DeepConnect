@@ -44,7 +44,7 @@ class GuiManager(QtWidgets.QWidget):
         self.ResetBtn = QtGui.QPushButton("Reset")
         sizePolicyBtn.setHeightForWidth(self.ResetBtn.sizePolicy().hasHeightForWidth())
         self.ResetBtn.setSizePolicy(sizePolicyBtn)
-        self.ResetBtn.setStyleSheet("background-color: gray; color: black; font-size: 24px; font: bold; border-radius: 3px")
+        self.ResetBtn.setStyleSheet("background-color: gray; color: black; font-size: 20px; font: bold")
         self.ResetBtn.clicked.connect(self.reset)
         self.ResetBtn.setEnabled(True)
 
@@ -70,7 +70,7 @@ class GuiManager(QtWidgets.QWidget):
         self.layout = QtWidgets.QGridLayout()
         self.setLayout(self.layout)
         self.layout.addWidget(self.Plot, 0, 0, 100, 100)
-        self.layout.addWidget(self.ResetBtn, 100, 90, 5, 10)
+        self.layout.addWidget(self.ResetBtn, 100, 55, 2, 45)
 
         # Splash icon
         splash_pix = QtGui.QPixmap('icon.png')
