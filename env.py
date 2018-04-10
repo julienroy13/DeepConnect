@@ -101,6 +101,7 @@ class Connect4(object):
 		self.n_columns = n_columns
 		self.win_streak = win_streak
 		self.grid = np.zeros(shape=(n_rows, n_columns), dtype=np.int)
+		self.turn = 1 # Player 1 starts the game
 
 		# Creates kernels to check the different winning conditions
 		h_win_kernel = np.ones(shape=(1, win_streak)) # horizontal win
@@ -118,6 +119,10 @@ class Connect4(object):
 		# Initializes next grid to current state of the game
 		next_grid = np.copy(self.grid)
 
+		# Checks if the column is out of bound (should not happen)
+		if column < 0 or column >= self.n_columns:
+			raise InvalidMove('This move is impossible. Column {} is out of bound.'.format(column))
+
 		# Checks if the column is full (should not happen)
 		if self.grid[0, column] != 0:
 			raise InvalidMove('This move is illegal. Column {} is already full.'.format(column))
@@ -130,8 +135,15 @@ class Connect4(object):
 				next_grid[row, column] = player_id
 				break # Piece stops here
 
+		# Updates the grid only if the move wasn't imaginary 
 		if not imaginary:
 			self.grid = next_grid
+
+		# Updates whose turn it is to play
+		if player_id == 1:
+			self.turn = 2
+		elif player_id == 2:
+			self.turn = 1
 
 		return next_grid
 
