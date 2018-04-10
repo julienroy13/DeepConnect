@@ -1,26 +1,70 @@
 import os
 import numpy as np
 import scipy.signal
+import pdb
 
 
 class Connect4Environment(object):
 	"""A class that wraps around the Connect4 game engine to accomodate a RL agent"""
 
-	def __init__(self):
+	def __init__(self, n_rows=6, n_columns=7, win_streak=4):
 
-		self.game = Connect4()
+		self.game = Connect4(n_rows, n_columns, win_streak)
 
-	def get_state(self):
+	def get_state(self, grid):
 		"""Transform matrix grid representation into a 3D state of one-hot vectors (n_rows x n_columns x 3)"""
-		pass
+		n_positions = self.game.n_rows * self.game.n_columns
+		state = np.zeros(shape=(n_positions, 3))
+		positions = np.reshape(grid, newshape=(n_positions,)) # uses the given grid, not necessarily the actual grid of the game
 
-	def step(self, action):
-		"""Makes a move in the environment that leads to a reward and a next state"""
+		# Fills the one-hot vectors with a one at the right index
+		state[np.arange(n_positions), positions] = 1
 
-		next_state = self.game.make_move(action, imaginary=False) # the state of the world is effectively modified
-		reward = int(self.game.check_win(1))
+		# Reshape state
+		state = np.reshape(state, newshape=(self.game.n_rows, self.game.n_columns, 3))
+
+		return state
+
+	def step(self, agent_action):
+		"""Makes a move in the environment for the first player (agent), and then plays for the second player (opponent). 
+			Returns to a reward and a next state"""
+
+		# Moves for player 1 (agent)
+		self.game.make_move(1, agent_action, imaginary=False)
+
+		# Moves for player 2 (opponent)
+		opponent_action = self.get_opponent_move(opponent_policy="random")
+		next_state = self.get_state(self.game.make_move(2, opponent_action, imaginary=False))
+
+		# gets the reward according to a chosen reward function (mode)
+		reward = self.get_reward(reward_function="win-lose-draw")
 
 		return next_state, reward
+
+	def get_opponent_move(self, opponent_policy="random"):
+		"""Makes a move in the environment for the second player (opponent). Returns to a reward and a next state"""
+
+		if opponent_policy == "random":
+			A_s = env.game.get_valid_moves()
+			a_id = np.random.randint(len(A_s))
+			opponent_action = A_s[a_id]
+
+		return opponent_action
+
+	def get_reward(self, reward_function="win-lose-draw"):
+		
+		if reward_function == "win-lose-draw":
+			# This rewarding
+			player1_win = self.game.check_win(1)
+			player2_win = self.game.check_win(2)
+			if player1_win:
+				reward = 1
+			elif player2_win:
+				reward = -1
+			else:
+				reward = 0
+
+		return reward
 
 	def get_successors(self):
 		"""Returns a list of tuples containing afterstates and actions that leads to those afterstates"""
@@ -29,7 +73,7 @@ class Connect4Environment(object):
 		valid_actions = self.game.get_valid_moves()
 		
 		for action in valid_actions:
-			successor = self.game.make_move(action, imaginary=True) # the state of the world won't be modified (here we only simulate)
+			successor = self.game.make_move(1, action, imaginary=True) # the state of the world won't be modified (here we only simulate)
 			successor_state = self.get_state(successor)
 			afterstates.append((successor_state, action))
 
@@ -40,7 +84,12 @@ class Connect4Environment(object):
 		self.game.reset()
 
 	def render():
-		pass
+		pass # Not implemented yet
+
+
+class InvalidMove(Exception):
+	# Just creating this custom exception so we can count them if needed
+	pass
 
 
 class Connect4(object):
@@ -51,7 +100,7 @@ class Connect4(object):
 		self.n_rows = n_rows
 		self.n_columns = n_columns
 		self.win_streak = win_streak
-		self.grid = np.zeros(shape=(n_rows, n_columns))
+		self.grid = np.zeros(shape=(n_rows, n_columns), dtype=np.int)
 
 		# Creates kernels to check the different winning conditions
 		h_win_kernel = np.ones(shape=(1, win_streak)) # horizontal win
@@ -67,11 +116,11 @@ class Connect4(object):
 		"""Places a piece of the player's color in the given column"""
 
 		# Initializes next grid to current state of the game
-		next_grid = self.grid
+		next_grid = np.copy(self.grid)
 
 		# Checks if the column is full (should not happen)
 		if self.grid[0, column] != 0:
-			raise ValueError('This move is illegal. Column {} is already full.'.format(column))
+			raise InvalidMove('This move is illegal. Column {} is already full.'.format(column))
 
 		for row in range(self.n_rows):
 			# If next row is empty
@@ -139,31 +188,54 @@ class Connect4(object):
 
 if __name__ == "__main__":
 
-	game = Connect4()
+	option = input("HEY, you can either test the game engine (option 1) or the environment wraper (option 2) : ")
 
-	while 1:
+	if option == '1':
+		game = Connect4()
 
-		# Player moves
-		A_s = game.get_valid_moves()
-		print("Valid moves : {}".format(A_s))
-		a = int(input("Your move : "))
-		game.make_move(1, a)
-		game.print_grid()
+		while 1:
 
-		if game.check_win(1):
-			print("Congratulations! You have won!")
-			break
+			# Player moves
+			a = int(input("Your move : "))
+			game.make_move(1, a)
+			game.print_grid()
 
-		# Random move from opponent
-		A_s = game.get_valid_moves()
-		a_id = np.random.randint(len(A_s))
-		game.make_move(2, A_s[a_id])
-		game.print_grid()
+			if game.check_win(1):
+				print("Congratulations! You have won!")
+				break
 
-		if game.check_win(2):
-			print("Player 2 have won. You got beaten by a random bot...")
-			break
+			# Random move from opponent
+			A_s = game.get_valid_moves()
+			a_id = np.random.randint(len(A_s))
+			game.make_move(2, A_s[a_id])
+			game.print_grid()
 
-	print("GAME OVER")
+			if game.check_win(2):
+				print("Player 2 have won. You got beaten by a random bot...")
+				break
+
+		print("GAME OVER")
+
+	elif option == '2':
+		env = Connect4Environment()
+
+		while 1:
+
+			# Player moves
+			afterstates = env.get_successors()
+			a = int(input("Your move : "))
+			next_state, reward = env.step(a) # the opponent moves as part of the environment's response to the agent's action
+			env.game.print_grid()
+
+			if env.game.check_win(1):
+				print("Congratulations! You have won!")
+				break
+
+			if env.game.check_win(2):
+				print("Player 2 have won. You got beaten by a random bot...")
+				break
+
+		pdb.set_trace() # easier to inspect stuff manually than print everything in the console
+		print("GAME OVER")
 
 
