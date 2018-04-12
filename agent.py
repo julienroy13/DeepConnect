@@ -61,8 +61,8 @@ class MLP(nn.Module):
             a = layer(x)
             x = self.act_fn(a)
 
-        # Linear layer for real-valued output
-        output = self.out(x)
+        # Sigmoid layer to output a probability of winning
+        output = F.sigmoid(self.out(x))
 
         return output
 
