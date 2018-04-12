@@ -3,6 +3,7 @@ import numpy as np
 import scipy.signal
 import pdb
 import time
+import utils
 
 
 class Connect4Environment(object):
@@ -110,7 +111,7 @@ class Connect4(object):
 		# Termination info
 		self.over = False
 		self.win_type = None # String
-		self.win_indices = [] # Indices of winning line
+		self.win_indices = None # Indices of winning line
 		self.winner = None # Either 1 or 2
 
 		# Creates kernels to check the different winning conditions
@@ -219,7 +220,7 @@ class Connect4(object):
 		self.turn = 1 # Player 1 starts the game
 		self.over = False
 		self.win_type = None # String
-		self.win_indices = [] # Indices of winning line
+		self.win_indices = None # Indices of winning line
 		self.winner = None # Either 1 or 2
 		self.recorder = [self.grid]
 		self.record_game = record_next_game
@@ -256,6 +257,7 @@ if __name__ == "__main__":
 
 	if option == '1':
 		game = Connect4()
+		game.reset(record_next_game=True)
 
 		while not game.over:
 
@@ -266,6 +268,7 @@ if __name__ == "__main__":
 
 			if game.check_win(1):
 				print("Congratulations! You have won!")
+				break
 
 			# Random move from opponent
 			A_s = game.get_valid_moves()
@@ -275,7 +278,9 @@ if __name__ == "__main__":
 
 			if game.check_win(2):
 				print("Player 2 have won. You got beaten by a random bot...")
+				break
 
+		utils.save_game(game.recorder, "results", game.win_indices)
 		print("GAME OVER")
 
 	elif option == '2':
