@@ -51,7 +51,7 @@ class GuiManager(QtWidgets.QWidget):
         # GraphicView
         self.Image = pg.ImageItem(autoLevels=False)
         self.Image.mousePressEvent = self.add_piece
-        self.Plot = pg.PlotWidget(title="Connect4", labels={"left":"Rows", "bottom":"Columns"})
+        self.Plot = pg.PlotWidget(title="Connect4")
         self.Plot.hideAxis("bottom")
         self.Plot.hideAxis("left")
         self.Plot.addItem(self.Image)
