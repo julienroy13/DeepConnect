@@ -84,9 +84,6 @@ class Connect4Environment(object):
 		"""Resets the environment"""
 		self.game.reset()
 
-	def render(self):
-		pass # Not implemented yet
-
 
 class InvalidMove(Exception):
 	# Just creating this custom exception so we can count them if needed
@@ -105,6 +102,10 @@ class Connect4(object):
 		# Initializes grid
 		self.grid = np.zeros(shape=(n_rows, n_columns), dtype=np.int)
 		self.turn = 1 # Player 1 starts the game
+
+		# Recorder
+		self.recorder = [self.grid]
+		self.record_game = False
 		
 		# Termination info
 		self.over = False
@@ -147,6 +148,7 @@ class Connect4(object):
 		# Updates the grid only if the move wasn't imaginary 
 		if not imaginary:
 			self.grid = next_grid
+			self.recorder.append(self.grid)
 
 		# Updates whose turn it is to play
 		if player_id == 1:
@@ -188,6 +190,7 @@ class Connect4(object):
 		return has_won
 
 	def get_win_indices(self, win_mask, win_type):
+		"""Return a list of indices representing the position of the pieces in the winning line"""
 		i, j = np.unravel_index(np.argmax(win_mask), win_mask.shape)
 		win_indices = []
 
@@ -210,15 +213,19 @@ class Connect4(object):
 		return win_indices
 
 
-	def reset(self):
+	def reset(self, record_next_game=False):
+		"""Reset the game engines to prepare for a new match, optionally allows to record the next game"""
 		self.grid = np.zeros(shape=(self.n_rows, self.n_columns))
 		self.turn = 1 # Player 1 starts the game
 		self.over = False
 		self.win_type = None # String
 		self.win_indices = [] # Indices of winning line
 		self.winner = None # Either 1 or 2
+		self.recorder = [self.grid]
+		self.record_game = record_next_game
 
 	def print_grid(self):
+		"""Just print the grid in the terminal with unicode characters"""
 		top = '_' * (self.n_columns+2)
 		print(top)
 		for i in range(self.n_rows):
@@ -237,6 +244,10 @@ class Connect4(object):
 		print(bottom)
 		print(' 0123456 ')
 		print("\n")
+
+	def get_record(self):
+		"""Returns a list of ndarray representing every grid state of the game so far"""
+		return self.recorder
 
 
 if __name__ == "__main__":
