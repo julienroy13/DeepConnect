@@ -5,6 +5,7 @@ from torch.autograd import Variable
 
 import numpy as np
 import math
+import os
 
 
 class agent(object):
@@ -19,11 +20,23 @@ class agent(object):
         self._alpha =params["alpha"]
 
     def select_action(self):
-        pass
+        raise NotImplemented
 
     def update(self, state, reward, next_state):
-        pass
+        raise NotImplemented
 
+    def save(self, save_dir, name):
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        torch.save(self.estimator.state_dict(), os.path.join(save_dir, name))
+
+
+class RandomAgent(object):
+
+    def select_action(self, game):
+        A_s = game.get_valid_moves()
+        a_id = np.random.randint(len(A_s))
+        return A_s[a_id]
 
 
 class MLP(nn.Module):
@@ -101,79 +114,6 @@ class MLP(nn.Module):
     def name(self):
         return "MLP"
 
-
-class td(agent):
-    def __init__(self, model, params, env):
-        super().__init__(model, params, env)
-        #
-        self.optimizer  = torch.optim.SGD(self.estimator.parameters(), lr=self._alpha)
-
-        #
-        self.eligibilities  = dict()
-        self.I = 1
-
-        # initialise critic eligibilities ([re]set to zero(0))
-        for i, group in enumerate(self.optimizer.param_groups):
-            zs = dict()
-            for p in group["params"]:
-                zs[p] = torch.zeros_like(p.data)
-            self.eligibilities[i] = zs
-    def select_action(self):
-        # retrieve (query) list of successors
-        # - indices (of implicit action/columns picked in the game):
-        #                shape [n_successors, n_channels=1, height=1, width=1]
-        # - successsors: shape [n_successors, n_channels=3, height, width]
-        tuples = self.env.get_successors()
-        successors, indices = zip(*tuples)
-        indices = np.array(indices)
-        successors = torch.Tensor(np.stack(successors))
-        # evaluate successors
-        # - values: shape [n_successors, n_channels=1, height=1, width=1]
-        values = self.estimator(Variable(successors.view((-1, 2*6*7)))).cpu()
-        # print(indices, values)
-        values = values.data[:, 0]
-        # choose an [implicit] action
-        # based on an epsilon-greedy exploration scheme
-        action = None
-        s = np.random.uniform()
-        if s < self.epsilon:
-            action = np.random.choice(indices)
-        else:
-            idx = np.random.choice(np.where(values == values.max())[0])
-            action = indices[idx]
-        #
-        # idx = np.random.choice(np.where(values == values.max())[0])
-        # action = indices[idx]
-        return action
-    def update(self, state, reward, next_state):
-        #
-        # reward = reward[:, :2]
-        error = Variable(torch.Tensor(reward)) + ( self._gamma * self.estimator(Variable(torch.Tensor(next_state).view((1, 2*6*7))))) - self.estimator(Variable(torch.Tensor(state).view((1, 2*6*7)))) if not self.env.game.over else Variable(torch.Tensor(reward)) - self.estimator(Variable(torch.Tensor(state).view((1, 2*6*7))))  # estimator(next_state) - estimator(state) if not done else reward - critic(state)
-        #
-        _delta = error.cpu().data[0, 0]
-        #
-        v = self.estimator(Variable(torch.Tensor(state).view((1, 2*6*7))))[0, 0]
-        v.backward()
-        #
-        for i, group in enumerate(self.optimizer.param_groups):
-
-            for p in group["params"]:
-                if p.grad is None:
-                    continue
-                # retrieve current eligibility
-                z = self.eligibilities[i][p]
-                # retrieve current gradient
-                grad = p.grad.data
-                # update eligibility
-                #
-                z.mul_(self._gamma * self._lambda).add_(self.I, grad)
-                # update parameters
-                p.data.add_(self._alpha * _delta * z)
-                # reset gradients
-                p.grad.detach_()
-                p.grad.zero_()
-        #
-        self.I *= self._gamma
         
 class smart(agent):
     def __init__(self, model, params, env, p=0):
