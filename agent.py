@@ -20,10 +20,10 @@ class agent(object):
         self._alpha =params["alpha"]
 
     def select_action(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def update(self, state, reward, next_state):
-        raise NotImplemented
+        raise NotImplementedError
 
     def save(self, save_dir, name):
         if not os.path.exists(save_dir):
