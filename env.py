@@ -70,14 +70,14 @@ class Connect4Environment(object):
 				pass # print("Not finished ...")
 		return reward.T
 
-	def get_successors(self):
+	def get_successors(self, player):
 		"""Returns a list of tuples containing afterstates and actions that leads to those afterstates"""
 
 		afterstates = [] # list of tuples (successor, action)
 		valid_actions = self.game.get_valid_moves()
 		
 		for action in valid_actions:
-			successor = self.game.make_move(1, action, imaginary=True) # the state of the world won't be modified (here we only simulate)
+			successor = self.game.make_move(player, action, imaginary=True) # the state of the world won't be modified (here we only simulate)
 			successor_state = self.get_state(successor)
 			afterstates.append((successor_state, action))
 
