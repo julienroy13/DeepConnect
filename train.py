@@ -74,6 +74,7 @@ for m in range(1):
             r.append(reward)
             index = (index%2) + 1
     rs.append(r)
+    smarty.save('models', 'smarty_{}.pkl'.format(i+1))
 
 # small visualisation
 # plt.clf()
