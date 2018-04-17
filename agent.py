@@ -362,16 +362,16 @@ class smart(agent):
         self.I *= self._gamma
 
 class greed(smart):
-    def __init__(self, model, p=0):
-        super().__init__(model, p)
-    def select_action(self, env):
+    def __init__(self, model, params, env, p=0):
+        super().__init__(model, params, env, p)
+    def select_action(self):
         # retrieve (query) list of possible moves
-        action = self.two_ply(env)
+        action = self.two_ply(self.env)
         return action
 
 class random(agent):
-    def select_action(self, env):
-        tuples = env.get_successors()
+    def select_action(self):
+        tuples = self.env.get_successors()
         _, indices = zip(*tuples)
         indices = np.array(indices)
         action = np.random.choice(indices)
