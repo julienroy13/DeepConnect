@@ -49,16 +49,6 @@ class Connect4Environment(object):
 
 		return next_state, reward
 
-	def get_opponent_move(self, opponent_policy="random"):
-		"""Makes a move in the environment for the second player (opponent). Returns to a reward and a next state"""
-
-		if opponent_policy == "random":
-			A_s = env.game.get_valid_moves()
-			a_id = np.random.randint(len(A_s))
-			opponent_action = A_s[a_id]
-
-		return opponent_action
-
 	def get_reward(self, reward_function="win-lose-draw"):
 		
 		if reward_function == "win-lose-draw":
