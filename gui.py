@@ -5,6 +5,8 @@ import os
 from PyQt5 import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg 
 import utils
+import agent
+import argparse
 
 from env import Connect4, InvalidMove
 
@@ -19,11 +21,30 @@ if platform.system() == "Windows":
 # GUI MANAGER
 class GuiManager(QtWidgets.QWidget):
 
-    def __init__(self):
+    def __init__(self, player2):
         super(GuiManager, self).__init__() # Initializes the base class QMainWindow
 
         # Instanciates a GameOfLife object
         self.game = Connect4()
+
+        # Loads the opponent
+        self.player2 = player2 # human, random or the name of a saved model (ex: smarty_999.pkl)
+        if self.player2 == 'human':
+            pass
+        
+        elif self.player2 == 'random':
+            self.opponent = agent.RandomAgent()
+        
+            """
+                elif self.player2.endswith('.pkl'):
+                    params = {"epsilon": 0.01, "gamma": 1., "lambda": 0.9, "alpha": 1e-3}
+                    env = Connect4Environment()
+                    estimator = MLP(2*6*7, [160], 3, "sigmoid", "glorot", verbose=True)
+                    self.opponent = agent.smart(model=estimator, params=params, env=env, p=2)
+            """
+
+        else:
+            raise ValueError('Unrecognized player type entered as input.')
 
         # Initializes the GUI widgets and layout
         self.setupGUI()
@@ -51,7 +72,7 @@ class GuiManager(QtWidgets.QWidget):
 
         # GraphicView
         self.Image = pg.ImageItem(autoLevels=False)
-        self.Image.mousePressEvent = self.add_piece
+        self.Image.mousePressEvent = self.human_add_piece
         self.Plot = pg.PlotWidget(title="Connect4")
         self.Plot.hideAxis("bottom")
         self.Plot.hideAxis("left")
@@ -87,7 +108,7 @@ class GuiManager(QtWidgets.QWidget):
         self.game.reset()
         self.updatePlot()
     
-    def add_piece(self, event):
+    def human_add_piece(self, event):
         if not(self.game.over):
             # Tries to add a piece (if the column isn't full)
             try:
@@ -96,8 +117,20 @@ class GuiManager(QtWidgets.QWidget):
                 self.game.check_win(1)
                 self.game.check_win(2)
                 self.updatePlot()
+                
+                if self.player2 != 'human':
+                    # Fake thinking delay before playing
+                    QtCore.QTimer.singleShot(np.random.randint(100, 500), lambda: self.bot_add_piece())
+
             except InvalidMove as e:
                 print(e)
+
+    def bot_add_piece(self):
+        if not(self.game.over):
+            opponent_action = self.opponent.select_action(self.game)
+            self.game.make_move(self.game.turn, opponent_action)
+            self.game.check_win(2)
+            self.updatePlot()
 
     def getPos(self , event):
         row = int(event.pos().x())
@@ -118,7 +151,13 @@ class GuiManager(QtWidgets.QWidget):
 
 # If we run the file directly
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--player2', type=str, default='human',
+                        help='Type of player you are playing against',
+                        choices=['human', 'random'])
+    args = parser.parse_args()
+
     global app
     app = QtWidgets.QApplication(sys.argv)  # Every PyQt application must create an application object
-    gui = GuiManager()                      # Create an object "GuiManager"
+    gui = GuiManager(args.player2)           # Create an object "GuiManager"
     sys.exit(app.exec_())                   # Enter the main loop of the application
