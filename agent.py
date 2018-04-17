@@ -311,9 +311,6 @@ class greed(smart):
 
 class random(agent):
     def select_action(self):
-        tuples = self.env.get_successors()
-        _, indices = zip(*tuples)
-        indices = np.array(indices)
-        action = np.random.choice(indices)
-        #
+        moves = self.env.game.get_valid_moves()
+        action = np.random.choice(moves)
         return action
