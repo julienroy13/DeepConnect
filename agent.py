@@ -176,8 +176,8 @@ class td(agent):
         self.I *= self._gamma
         
 class smart(agent):
-    def __init__(self, model, params, p=0):
-        super().__init__(model, params)
+    def __init__(self, model, params, env, p=0):
+        super().__init__(model, params, env)
         #
         self.optimizer  = torch.optim.SGD(self.estimator.parameters(), lr=self._alpha)
         self.p = p
