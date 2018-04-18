@@ -303,7 +303,7 @@ class greed(smart):
         super().__init__(model, params, env, p)
     def select_action(self):
         # retrieve (query) list of possible moves
-        action = self.two_ply(self.env)
+        action = self._two_ply(self.env)
         return action
 
 class random(agent):
