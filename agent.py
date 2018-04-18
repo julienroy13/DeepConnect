@@ -10,9 +10,10 @@ import os
 
 class agent(object):
 
-    def __init__(self, model, params, env):
+    def __init__(self, model, params, env, p=1):
         self.estimator = model
         self.env = env
+        self.p = p
 
         self.epsilon =params["epsilon"]
         self._gamma =params["gamma"]
