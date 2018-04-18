@@ -136,12 +136,12 @@ class smart(agent):
                 zs[p] = torch.zeros_like(p.data)
             self.eligibilities[i] = zs
     
-    def one_ply(self, env):
+    def _one_ply(self, env):
         # retrieve (query) list of successors
         # - indices (of implicit action/columns picked in the game):
         #                shape [n_successors, n_channels=1, height=1, width=1]
         # - successsors: shape [n_successors, n_channels=3, height, width]
-        tuples = env.get_successors()
+        tuples = env.get_successors(self.p)
         successors, indices = zip(*tuples)
         indices = np.array(indices)
         successors = torch.Tensor(np.stack(successors))
@@ -155,7 +155,7 @@ class smart(agent):
         best_action = indices[idx]
         return best_action
         
-    def two_ply(self, env):
+    def _two_ply(self, env):
         """Returns a list of tuples containing afterstates and actions that leads to those afterstates"""
 
         best_action = None
@@ -164,14 +164,14 @@ class smart(agent):
         level0 = env.game.grid
         over = env.game.over
         for action in valid_actions:
-            level1 = env.game.make_move(1, action) # the state of the world won't be modified (here we only simulate)
+            level1 = env.game.make_move(self.p, action) # the state of the world won't be modified (here we only simulate)
             done = env.game.check_draw() or env.game.check_win(1) or env.game.check_win(2)
             if done:
                 s = torch.Tensor(env.get_state(level1))
                 v = self.estimator(Variable(s.view((-1, 2*6*7)))).cpu().data.numpy()[:, self.p]
             else:
                 # retrieve (query) list of successors
-                tuples = env.get_successors()
+                tuples = env.get_successors(self.p)
                 successors, indices = zip(*tuples)
                 indices = np.array(indices)
                 successors = torch.Tensor(np.stack(successors))
@@ -188,9 +188,9 @@ class smart(agent):
             env.game.over = over
         return best_action
     
-    def three_ply(self, env):
+    def _three_ply(self, env):
         # retrieve (query) list of successors
-        tuples = env.get_successors()
+        tuples = env.get_successors(self.p)
         successors, indices = zip(*tuples)
         indices = np.array(indices)
         successors = torch.Tensor(np.stack(successors))
@@ -208,14 +208,14 @@ class smart(agent):
         level0 = env.game.grid        
         over = env.game.over
         for a in l0_actions:
-            level1 = env.game.make_move(1, a) # the state of the world won't be modified (here we only simulate)
+            level1 = env.game.make_move(self.p, a) # the state of the world won't be modified (here we only simulate)
             done = env.game.check_draw() or env.game.check_win(1) or env.game.check_win(2)
             if done:
                 s1 = torch.Tensor(env.get_state(level1))
                 v = self.estimator(Variable(s1.view((-1, 2*6*7)))).cpu().data.numpy()[:, 0]
             else:
                 # retrieve (query) list of successors
-                l1_tuples = env.get_successors()
+                l1_tuples = env.get_successors(self.p)
                 l1_successors, l1_indices = zip(*l1_tuples)
                 #
                 l1_expectations = []
@@ -224,13 +224,13 @@ class smart(agent):
                     level1 = env.game.grid
                     l2_expectations = []
                     for e in l1_actions:
-                        level2 = env.game.make_move(1, e)  # opponent plays
+                        level2 = env.game.make_move(self.p, e)  # opponent plays
                         done = env.game.check_draw() or env.game.check_win(1) or env.game.check_win(2)
                         if done:
                             s2 = torch.Tensor(env.get_state(level2))
                             v__ = self.estimator(Variable(s2.view((-1, 2*6*7)))).cpu().data.numpy()[:, 0]
                         else:
-                            l2_tuples = env.get_successors()
+                            l2_tuples = env.get_successors(self.p)
                             l2_successors, l2_indices = zip(*l2_tuples)
                             l2_indices = np.array(l2_indices)
                             l2_successors = torch.Tensor(np.stack(l2_successors))
@@ -265,8 +265,9 @@ class smart(agent):
             moves = self.env.game.get_valid_moves()
             action = np.random.choice(moves)
         else:
-            action = self.two_ply(self.env)
+            action = self._two_ply(self.env)
         return action
+    
     def update(self, state, reward, next_state):
         #
         # reward = reward[:, :2]
@@ -274,13 +275,8 @@ class smart(agent):
         #
         _delta = error.cpu().data[0, self.p]
         #
-        v = self.estimator(Variable(torch.Tensor(state).view((1, 2*6*7))))#[0, self.p]
-        #v.backward()
-        z = torch.zeros(1, 3)
-        z[0, self.p] = 1
-        z[0, 2] = -1
-        loss = torch.sum(Variable(z)*v)
-        loss.backward
+        v = self.estimator(Variable(torch.Tensor(state).view((1, 2*6*7))))[0, self.p]
+        v.backward()
         #
         for i, group in enumerate(self.optimizer.param_groups):
 
