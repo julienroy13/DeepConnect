@@ -168,6 +168,33 @@ class smart(agent):
             error = Variable(torch.Tensor(reward)) + ( self._gamma * self.estimator(next_state)) - self.estimator(state)
         else: 
             error = Variable(torch.Tensor(reward)) - self.estimator(state)
+
+        """
+        for i in range(3):
+            _delta = error.data[0, i]
+        
+            # Backpropagates the gradient of the estimation that the agent will win
+            v = self.estimator(state)[0, i]
+            v.backward()
+            
+            # Updates the parameters
+            for i, group in enumerate(self.optimizer.param_groups):
+
+                for p in group["params"]:
+                    if p.grad is None:
+                        continue
+                    # retrieve current eligibility
+                    z = self.eligibilities[i][p]
+                    # retrieve current gradient
+                    grad = p.grad.data
+                    # update eligibility
+                    z.mul_(self._gamma * self._lambda).add_(self.I, grad)
+                    # update parameters
+                    p.data.add_(self._alpha * _delta * z)
+                    # reset gradients
+                    p.grad.detach_()
+                    p.grad.zero_()
+        """            
         _delta = error.data[0, self.p]
         
         # Backpropagates the gradient of the estimation that the agent will win
@@ -191,7 +218,9 @@ class smart(agent):
                 # reset gradients
                 p.grad.detach_()
                 p.grad.zero_()
+        
         self.I *= self._gamma
+
 
 class random(agent):
     def select_action(self):

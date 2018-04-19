@@ -8,7 +8,7 @@ import pdb
 
 PLAYER1_LEARNS = True
 PLAYER2_LEARNS = True
-TRAIN_TIME = 50000
+TRAIN_TIME = 1000
 
 # training parameters
 params = {"epsilon": 0.01, 
