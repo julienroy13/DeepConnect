@@ -117,11 +117,10 @@ class MLP(nn.Module):
 
         
 class smart(agent):
-    def __init__(self, model, params, env, p=0):
-        super().__init__(model, params, env)
+    def __init__(self, model, params, env, p=1):
+        super().__init__(model, params, env, p)
         #
         self.optimizer  = torch.optim.SGD(self.estimator.parameters(), lr=self._alpha)
-        self.p = p
         self.reset()
     
     def reset(self):
@@ -299,7 +298,7 @@ class smart(agent):
         self.I *= self._gamma
 
 class greed(smart):
-    def __init__(self, model, params, env, p=0):
+    def __init__(self, model, params, env, p=1):
         super().__init__(model, params, env, p)
     def select_action(self):
         # retrieve (query) list of possible moves
