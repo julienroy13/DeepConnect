@@ -1,5 +1,5 @@
 import numpy as np
-from agent import MLP, smart, greed, random
+from agent import MLP, smart, random
 from env import Connect4Environment
 
 from matplotlib import pyplot as plt
@@ -8,7 +8,7 @@ import pdb
 
 PLAYER1_LEARNS = True
 PLAYER2_LEARNS = True
-TRAIN_TIME = 1000
+TRAIN_TIME = 50000
 
 # training parameters
 params = {"epsilon": 0.01, 
@@ -36,6 +36,7 @@ def play(state, player):
 rewards = []
 steps = []
 n_trials = 1
+started_game = []
 for m in range(n_trials):
     
     # Instanciate the value network
@@ -50,7 +51,6 @@ for m in range(n_trials):
         
         # Resets the environment and the player1's eligibility trace
         env.reset()
-        print("STARTS : {}".format(env.game.turn))
         if PLAYER1_LEARNS: player1.reset()
         if PLAYER2_LEARNS: player2.reset()
 
@@ -59,6 +59,7 @@ for m in range(n_trials):
 
         # Throws a coin to decide which player starts the game
         env.game.turn = np.random.randint(low=1, high=3)
+        started_game.append(env.game.turn)
 
         while not env.game.over:
             # If is the turn of player 1
@@ -85,6 +86,7 @@ for m in range(n_trials):
 
     player1.save('models', 'smarty_{}.pkl'.format(i+1))
 
+print("\nP1 started {} times\nP2 started {} times\n".format((np.array(started_game)==1).sum(), (np.array(started_game)==2).sum()))
 # counts the number of wins
 player1_wins = 0
 player2_wins = 0
@@ -100,26 +102,3 @@ for r in rewards:
         player2_wins += 1
 
 print("Player1 wins : {}\nPlayer2 wins : {}\nDraws : {}".format(player1_wins, player2_wins, draws))
-
-
-"""
-# small test against random player
-greedy  = greed(model=estimator, params=params, env=env, p=1)
-rand = random(model=None, params=params, env=env, p=2)
-r = 0
-for i in tqdm(range(500)):
-    # initialise (reset) the environment
-    # note: returns the initial state of the environment
-    env.reset()
-    state = np.zeros((1, 2*6*7))
-    index = 1
-    while not env.game.over:
-        if index == 1:
-            p = greedy
-        elif index == 2:
-            p = rand
-        state, reward = play(state, p)
-        r = r + reward
-        index = (index%2) + 1
-print(r)
-"""

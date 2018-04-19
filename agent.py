@@ -30,6 +30,9 @@ class agent(object):
             os.makedirs(save_dir)
         torch.save(self.estimator.state_dict(), os.path.join(save_dir, name))
 
+    def load(self, path):
+        self.estimator.load_state_dict(torch.load(path))
+
 
 class MLP(nn.Module):
     def __init__(self, inp_size, h_sizes, out_size, act_fn, init_type, verbose=False):
@@ -94,13 +97,10 @@ class MLP(nn.Module):
 
     def get_number_of_params(self):
 
-        total_params = 0
-        for params in self.parameters():
-            total_size = 1
-            for size in params.size():
-                total_size *= size
-            total_params += total_size
-        return total_params
+        num_params = 0
+        for param in self.parameters():
+            num_params += param.numel()
+        return num_params
 
     def name(self):
         return "MLP"
@@ -192,14 +192,6 @@ class smart(agent):
                 p.grad.detach_()
                 p.grad.zero_()
         self.I *= self._gamma
-
-class greed(smart):
-    def __init__(self, model, params, env, p=1):
-        super().__init__(model, params, env, p)
-    def select_action(self):
-        # Acts greedily (always picks the action that maximizes the predicted value)
-        action = self._one_ply(self.env)
-        return action
 
 class random(agent):
     def select_action(self):

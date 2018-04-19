@@ -38,14 +38,12 @@ class Connect4Environment(object):
 		"""Makes a move in the environment for the first player (agent), and then plays for the second player (opponent). 
 			Returns to a reward and a next state"""
 
-		#
+		# makes a move and converts resulting grid to state representation
 		obs = self.game.make_move(player, action, imaginary=False)
 		next_state = self.get_state(obs)
 
 		# gets the reward according to a chosen reward function (mode)
-		# print(self.game.over)
 		reward = self.get_reward(reward_function="win-lose-draw")
-		# print(self.game.over)
 
 		return next_state, reward
 
