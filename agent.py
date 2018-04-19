@@ -214,7 +214,7 @@ class smart(agent):
             done = env.game.check_draw() or env.game.check_win(1) or env.game.check_win(2)
             if done:
                 s1 = torch.Tensor(env.get_state(level1))
-                v = self.estimator(Variable(s1.view((-1, 2*6*7)))).cpu().data.numpy()[:, 0]
+                v = self.estimator(Variable(s1.view((1, -1)))).cpu().data.numpy()[:, 0]
             else:
                 # retrieve (query) list of successors
                 l1_tuples = env.get_successors(self.p)
@@ -274,11 +274,11 @@ class smart(agent):
     def update(self, state, reward, next_state):
         #
         # reward = reward[:, :2]
-        error = Variable(torch.Tensor(reward)) + ( self._gamma * self.estimator(Variable(torch.Tensor(next_state).view((1, 2*6*7))))) - self.estimator(Variable(torch.Tensor(state).view((1, 2*6*7)))) if not self.env.game.over else Variable(torch.Tensor(reward)) - self.estimator(Variable(torch.Tensor(state).view((1, 2*6*7))))  # estimator(next_state) - estimator(state) if not done else reward - critic(state)
+        error = Variable(torch.Tensor(reward)) + ( self._gamma * self.estimator(Variable(torch.Tensor(next_state).view((1, -1))))) - self.estimator(Variable(torch.Tensor(state).view((1, -1)))) if not self.env.game.over else Variable(torch.Tensor(reward)) - self.estimator(Variable(torch.Tensor(state).view((1, -1))))  # estimator(next_state) - estimator(state) if not done else reward - critic(state)
         #
         _delta = error.cpu().data[0, self.p]
         #
-        v = self.estimator(Variable(torch.Tensor(state).view((1, 2*6*7))))[0, self.p]
+        v = self.estimator(Variable(torch.Tensor(state).view((1, -1))))[0, self.p]
         v.backward()
         #
         for i, group in enumerate(self.optimizer.param_groups):
