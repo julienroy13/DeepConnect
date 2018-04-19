@@ -6,6 +6,7 @@ from torch.autograd import Variable
 import numpy as np
 import math
 import os
+import pdb
 
 
 class agent(object):
@@ -138,9 +139,8 @@ class smart(agent):
         # - values: shape [n_successors, n_channels=1, height=1, width=1]
         values = self.estimator(successors)
         values = values.data[:, self.p].numpy()
-        # choose the action that leads to highest valued afterstate (successor)      
-        idx = np.random.choice(np.where(values == values.max())[0])
-        best_action = indices[idx]
+        # choose the action that leads to highest valued afterstate (successor)   
+        best_action = indices[np.argmax(values)]
         return best_action
     
     def select_action(self):
@@ -162,12 +162,13 @@ class smart(agent):
         # Transforms states ndarrays into Torch Vectors
         state = Variable(torch.Tensor(state).view((1, self.env.d * self.env.game.n_rows * self.env.game.n_columns)))
         next_state = Variable(torch.Tensor(next_state).view((1, self.env.d * self.env.game.n_rows * self.env.game.n_columns)))
+        reward = Variable(torch.Tensor(reward))
 
         # Computes the temporal difference (TD error)
         if not self.env.game.over:
-            error = Variable(torch.Tensor(reward)) + ( self._gamma * self.estimator(next_state)) - self.estimator(state)
+            error = reward + (self._gamma * self.estimator(next_state)) - self.estimator(state)
         else: 
-            error = Variable(torch.Tensor(reward)) - self.estimator(state)
+            error = reward - self.estimator(state)
 
         """
         for i in range(3):
@@ -218,6 +219,7 @@ class smart(agent):
                 # reset gradients
                 p.grad.detach_()
                 p.grad.zero_()
+        
         
         self.I *= self._gamma
 

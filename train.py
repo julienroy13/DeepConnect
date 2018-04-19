@@ -11,10 +11,10 @@ PLAYER2_LEARNS = False
 TRAIN_TIME = 1000
 
 # training parameters
-params = {"epsilon": 0.01, 
+params = {"epsilon": 0.05, 
           "gamma": 1., 
-          "lambda": 0.9, 
-          "alpha": 1e-3}
+          "lambda": 1., 
+          "alpha": 1e15}
 
 # environment
 env = Connect4Environment()
@@ -40,11 +40,12 @@ started_game = []
 for m in range(n_trials):
     
     # Instanciate the value network
-    estimator = MLP(env.d*env.game.n_rows*env.game.n_columns, [160], 3, "sigmoid", "glorot", verbose=True)
+    estimator = MLP(env.d*env.game.n_rows*env.game.n_columns, [160], 3, "relu", "glorot", verbose=True)
     
     # Instanciates the two players
     player1 = smart(model=estimator, params=params, env=env, p=1)
     player2 = smart(model=estimator, params=params, env=env, p=2)
+    #player2 = random(model=estimator, params=params, env=env, p=2)
     
     step = 0
     for i in tqdm(range(TRAIN_TIME)):
@@ -84,7 +85,7 @@ for m in range(n_trials):
         rewards.append(reward)
         steps.append(step)
 
-    player1.save('models', 'smarty_{}.pkl'.format(i+1))
+    player1.save('models', 'poulet_{}.pkl'.format(i+1))
 
 print("\nP1 started {} times\nP2 started {} times\n".format((np.array(started_game)==1).sum(), (np.array(started_game)==2).sum()))
 # counts the number of wins
