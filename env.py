@@ -15,16 +15,7 @@ class Connect4Environment(object):
 
 	def get_state(self, grid):
 		"""Transform matrix grid representation into a 3D state of one-hot vectors (n_rows x n_columns x 3)"""
-		n_positions = self.game.n_rows * self.game.n_columns
-		state = np.zeros(shape=(n_positions, 3))
-		positions = np.reshape(grid, newshape=(n_positions,)) # uses the given grid, not necessarily the actual grid of the game
-
-		# Fills the one-hot vectors with a one at the right index
-		state[np.arange(n_positions), positions] = 1
-
-		# Reshape state
-		state = np.reshape(state, newshape=(self.game.n_rows, self.game.n_columns, 3))
-
+		state = np.stack([grid==1, grid==2]).astype(np.int)
 		return state
 
 	def step(self, agent_action):
@@ -43,39 +34,50 @@ class Connect4Environment(object):
 
 		return next_state, reward
 
-	def get_opponent_move(self, opponent_policy="random"):
-		"""Makes a move in the environment for the second player (opponent). Returns to a reward and a next state"""
+	def play(self, player, action):
+		"""Makes a move in the environment for the first player (agent), and then plays for the second player (opponent). 
+			Returns to a reward and a next state"""
 
-		if opponent_policy == "random":
-			A_s = env.game.get_valid_moves()
-			a_id = np.random.randint(len(A_s))
-			opponent_action = A_s[a_id]
+		#
+		obs = self.game.make_move(player, action, imaginary=False)
+		next_state = self.get_state(obs)
 
-		return opponent_action
+		# gets the reward according to a chosen reward function (mode)
+		# print(self.game.over)
+		reward = self.get_reward(reward_function="win-lose-draw")
+		# print(self.game.over)
+
+		return next_state, reward
 
 	def get_reward(self, reward_function="win-lose-draw"):
 		
 		if reward_function == "win-lose-draw":
+			reward = np.zeros(shape=(3, 1))
 			# This rewarding
 			player1_win = self.game.check_win(1)
 			player2_win = self.game.check_win(2)
+			draw = self.game.check_draw()
 			if player1_win:
-				reward = 1
+				reward[2] = 1.
+				# print("P1 wins!")
 			elif player2_win:
-				reward = -1
+				reward[1] = 1.
+				# print("P2 wins!")
+			elif draw:
+				reward[0] = 1.
+				# print("It's a draw game!")
 			else:
-				reward = 0
+				pass # print("Not finished ...")
+		return reward.T
 
-		return reward
-
-	def get_successors(self):
+	def get_successors(self, player):
 		"""Returns a list of tuples containing afterstates and actions that leads to those afterstates"""
 
 		afterstates = [] # list of tuples (successor, action)
 		valid_actions = self.game.get_valid_moves()
 		
 		for action in valid_actions:
-			successor = self.game.make_move(1, action, imaginary=True) # the state of the world won't be modified (here we only simulate)
+			successor = self.game.make_move(player, action, imaginary=True) # the state of the world won't be modified (here we only simulate)
 			successor_state = self.get_state(successor)
 			afterstates.append((successor_state, action))
 
@@ -190,6 +192,13 @@ class Connect4(object):
 
 		return has_won
 
+	def check_draw(self):
+		is_draw = (not self.check_win(1)) and (not self.check_win(2)) and ((self.grid > 0).all())
+		if is_draw:
+			self.over = True
+
+		return is_draw
+
 	def get_win_indices(self, win_mask, win_type):
 		"""Return a list of indices representing the position of the pieces in the winning line"""
 		i, j = np.unravel_index(np.argmax(win_mask), win_mask.shape)
@@ -249,58 +258,3 @@ class Connect4(object):
 	def get_record(self):
 		"""Returns a list of ndarray representing every grid state of the game so far"""
 		return self.recorder
-
-
-if __name__ == "__main__":
-
-	option = input("HEY, you can either test the game engine (option 1) or the environment wraper (option 2) : ")
-
-	if option == '1':
-		game = Connect4()
-		game.reset(record_next_game=True)
-
-		while not game.over:
-
-			# Player moves
-			a = int(input("Your move : "))
-			game.make_move(1, a)
-			game.print_grid()
-
-			if game.check_win(1):
-				print("Congratulations! You have won!")
-				break
-
-			# Random move from opponent
-			A_s = game.get_valid_moves()
-			a_id = np.random.randint(len(A_s))
-			game.make_move(2, A_s[a_id])
-			game.print_grid()
-
-			if game.check_win(2):
-				print("Player 2 have won. You got beaten by a random bot...")
-				break
-
-		utils.save_game(game.recorder, "results", game.win_indices)
-		print("GAME OVER")
-
-	elif option == '2':
-		env = Connect4Environment()
-
-		while not game.over:
-
-			# Player moves
-			afterstates = env.get_successors()
-			a = int(input("Your move : "))
-			next_state, reward = env.step(a) # the opponent moves as part of the environment's response to the agent's action
-			env.game.print_grid()
-
-			if env.game.check_win(1):
-				print("Congratulations! You have won!")
-
-			if env.game.check_win(2):
-				print("Player 2 have won. You got beaten by a random bot...")
-
-		pdb.set_trace() # easier to inspect stuff manually than print everything in the console
-		print("GAME OVER")
-
-
