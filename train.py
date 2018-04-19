@@ -42,7 +42,7 @@ def play(state, player):
 
 # example of self-training
 rs = []
-n_trials = 5
+n_trials = 1
 for m in range(n_trials):
     estimator = MLP(2*6*7, [160], 3, "sigmoid", "glorot", verbose=True)
     candidate = smart(model=estimator, params=params, env=env, p=1)
@@ -99,8 +99,8 @@ plt.grid(True, color="lightgrey", linestyle="--")
 plt.show()
 
 # small test against ranom player
-greedy  = greed(model=estimator, params=params, env=env, p=0)
-rand = random(model=None, params=params, env=env)
+greedy  = greed(model=estimator, params=params, env=env, p=1)
+rand = random(model=None, params=params, env=env, p=2)
 r = 0
 for i in tqdm(range(500)):
     # initialise (reset) the environment
