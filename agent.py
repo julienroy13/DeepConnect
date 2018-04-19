@@ -148,7 +148,7 @@ class smart(agent):
         # - values: shape [n_successors, n_channels=1, height=1, width=1]
         n_successors = indices.shape[0]
         values = self.estimator(Variable(successors.view((n_successors, -1)))).cpu()
-        values = values.data[:, 1]
+        values = values.data[:, self.p]
         # choose an [implicit] action
         # based on an epsilon-greedy exploration scheme       
         idx = np.random.choice(np.where(values == values.max())[0])
@@ -199,7 +199,7 @@ class smart(agent):
         n_successors = indices.shape[0]
         values = self.estimator(Variable(successors.view((n_successors, -1)))).cpu().data
         #select top-4 best actions
-        vs = values.numpy()[:, 1]
+        vs = values.numpy()[:, self.p]
         n = min(4, vs.shape[0]-1)
         inds = np.argpartition(a=vs, kth=n)[-n:]
         l0_actions = indices[inds]
@@ -214,7 +214,7 @@ class smart(agent):
             done = env.game.check_draw() or env.game.check_win(1) or env.game.check_win(2)
             if done:
                 s1 = torch.Tensor(env.get_state(level1))
-                v = self.estimator(Variable(s1.view((1, -1)))).cpu().data.numpy()[:, 0]
+                v = self.estimator(Variable(s1.view((1, -1)))).cpu().data.numpy()[:, self.p]
             else:
                 # retrieve (query) list of successors
                 l1_tuples = env.get_successors(self.p)
@@ -230,7 +230,7 @@ class smart(agent):
                         done = env.game.check_draw() or env.game.check_win(1) or env.game.check_win(2)
                         if done:
                             s2 = torch.Tensor(env.get_state(level2))
-                            v__ = self.estimator(Variable(s2.view((1, -1)))).cpu().data.numpy()[:, 0]
+                            v__ = self.estimator(Variable(s2.view((1, -1)))).cpu().data.numpy()[:, self.p]
                         else:
                             l2_tuples = env.get_successors(self.p)
                             l2_successors, l2_indices = zip(*l2_tuples)
@@ -240,7 +240,7 @@ class smart(agent):
                             n_successors = l2_indices.shape[0]
                             l2_values = self.estimator(Variable(l2_successors.view((n_successors, -1)))).cpu().data
                             # compute expected value
-                            v__ = l2_values.numpy()[:, 0].mean()
+                            v__ = l2_values.numpy()[:, self.p].mean()
                         l2_expectations.append(v__)
                         # undo e
                         env.game.grid = level1
