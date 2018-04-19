@@ -15,7 +15,7 @@ class Connect4Environment(object):
 
 	def get_state(self, grid):
 		"""Transform matrix grid representation into a 3D state of one-hot vectors (n_rows x n_columns x 3)"""
-		state = np.stack([grid==1, grid==2]).astype(np.int)
+		state = np.stack([grid==0, grid==1, grid==2]).astype(np.int)
 		return state
 
 	def step(self, agent_action):
