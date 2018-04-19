@@ -133,7 +133,7 @@ class smart(agent):
         tuples = env.get_successors(self.p)
         successors, indices = zip(*tuples)
         indices = np.array(indices)
-        successors = Variable(torch.Tensor(np.stack(successors)).view((-1, 2 * self.env.game.n_rows * self.env.game.n_columns)))
+        successors = Variable(torch.Tensor(np.stack(successors)).view((-1, self.env.d * self.env.game.n_rows * self.env.game.n_columns)))
         # evaluate successors
         # - values: shape [n_successors, n_channels=1, height=1, width=1]
         values = self.estimator(successors)
@@ -160,8 +160,8 @@ class smart(agent):
     def update(self, state, reward, next_state):
         
         # Transforms states ndarrays into Torch Vectors
-        state = Variable(torch.Tensor(state).view((1, 2 * self.env.game.n_rows * self.env.game.n_columns)))
-        next_state = Variable(torch.Tensor(next_state).view((1, 2 * self.env.game.n_rows * self.env.game.n_columns)))
+        state = Variable(torch.Tensor(state).view((1, self.env.d * self.env.game.n_rows * self.env.game.n_columns)))
+        next_state = Variable(torch.Tensor(next_state).view((1, self.env.d * self.env.game.n_rows * self.env.game.n_columns)))
 
         # Computes the temporal difference (TD error)
         if not self.env.game.over:

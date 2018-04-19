@@ -7,7 +7,7 @@ from tqdm import tqdm
 import pdb
 
 PLAYER1_LEARNS = True
-PLAYER2_LEARNS = True
+PLAYER2_LEARNS = False
 TRAIN_TIME = 1000
 
 # training parameters
@@ -40,7 +40,7 @@ started_game = []
 for m in range(n_trials):
     
     # Instanciate the value network
-    estimator = MLP(2*env.game.n_rows*env.game.n_columns, [160], 3, "sigmoid", "glorot", verbose=True)
+    estimator = MLP(env.d*env.game.n_rows*env.game.n_columns, [160], 3, "sigmoid", "glorot", verbose=True)
     
     # Instanciates the two players
     player1 = smart(model=estimator, params=params, env=env, p=1)
@@ -55,7 +55,7 @@ for m in range(n_trials):
         if PLAYER2_LEARNS: player2.reset()
 
         # Initial state
-        state = np.zeros((1, 2*env.game.n_rows*env.game.n_columns))
+        state = np.zeros((1, env.d*env.game.n_rows*env.game.n_columns))
 
         # Throws a coin to decide which player starts the game
         env.game.turn = np.random.randint(low=1, high=3)
