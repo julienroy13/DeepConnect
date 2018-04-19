@@ -58,10 +58,10 @@ class Connect4Environment(object):
 			player2_win = self.game.check_win(2)
 			draw = self.game.check_draw()
 			if player1_win:
-				reward[2] = 1.
+				reward[1] = 1.
 				# print("P1 wins!")
 			elif player2_win:
-				reward[1] = 1.
+				reward[2] = 1.
 				# print("P2 wins!")
 			elif draw:
 				reward[0] = 1.
