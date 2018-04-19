@@ -146,7 +146,8 @@ class smart(agent):
         successors = torch.Tensor(np.stack(successors))
         # evaluate successors
         # - values: shape [n_successors, n_channels=1, height=1, width=1]
-        values = self.estimator(Variable(successors.view((-1, 2*6*7)))).cpu()
+        n_successors = indices.shape[0]
+        values = self.estimator(Variable(successors.view((n_successors, -1)))).cpu()
         values = values.data[:, 1]
         # choose an [implicit] action
         # based on an epsilon-greedy exploration scheme       
@@ -167,7 +168,7 @@ class smart(agent):
             done = env.game.check_draw() or env.game.check_win(1) or env.game.check_win(2)
             if done:
                 s = torch.Tensor(env.get_state(level1))
-                v = self.estimator(Variable(s.view((-1, 2*6*7)))).cpu().data.numpy()[:, self.p]
+                v = self.estimator(Variable(s.view((1, -1)))).cpu().data.numpy()[:, self.p]
             else:
                 # retrieve (query) list of successors
                 tuples = env.get_successors(self.p)
@@ -175,7 +176,8 @@ class smart(agent):
                 indices = np.array(indices)
                 successors = torch.Tensor(np.stack(successors))
                 # evaluate successors
-                values = self.estimator(Variable(successors.view((-1, 2*6*7)))).cpu().data
+                n_successors = indices.shape[0]
+                values = self.estimator(Variable(successors.view((n_successors, -1)))).cpu().data
                 # compute expected value
                 v = values.numpy()[:, self.p].mean()
             # update best choice of action
@@ -194,7 +196,8 @@ class smart(agent):
         indices = np.array(indices)
         successors = torch.Tensor(np.stack(successors))
         # evaluate successors
-        values = self.estimator(Variable(successors.view((-1, 2*6*7)))).cpu().data
+        n_successors = indices.shape[0]
+        values = self.estimator(Variable(successors.view((n_successors, -1)))).cpu().data
         #select top-4 best actions
         vs = values.numpy()[:, 1]
         n = min(4, vs.shape[0]-1)
@@ -227,14 +230,15 @@ class smart(agent):
                         done = env.game.check_draw() or env.game.check_win(1) or env.game.check_win(2)
                         if done:
                             s2 = torch.Tensor(env.get_state(level2))
-                            v__ = self.estimator(Variable(s2.view((-1, 2*6*7)))).cpu().data.numpy()[:, 0]
+                            v__ = self.estimator(Variable(s2.view((1, -1)))).cpu().data.numpy()[:, 0]
                         else:
                             l2_tuples = env.get_successors(self.p)
                             l2_successors, l2_indices = zip(*l2_tuples)
                             l2_indices = np.array(l2_indices)
                             l2_successors = torch.Tensor(np.stack(l2_successors))
                             # evaluate successors
-                            l2_values = self.estimator(Variable(l2_successors.view((-1, 2*6*7)))).cpu().data
+                            n_successors = l2_indices.shape[0]
+                            l2_values = self.estimator(Variable(l2_successors.view((n_successors, -1)))).cpu().data
                             # compute expected value
                             v__ = l2_values.numpy()[:, 0].mean()
                         l2_expectations.append(v__)
