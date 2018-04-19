@@ -63,7 +63,7 @@ class MLP(nn.Module):
         if verbose:
             print('\nModel Info ------------')
             print(self)
-            print("Total number of parameters : {:.2f} M".format(self.get_number_of_params() / 1e6))
+            print("Total number of parameters : {:.2f} k".format(self.get_number_of_params() / 1e3))
             print('---------------------- \n')
 
     def forward(self, x):
@@ -137,7 +137,7 @@ class smart(agent):
         # evaluate successors
         # - values: shape [n_successors, n_channels=1, height=1, width=1]
         values = self.estimator(successors)
-        values = values.data[:, 1].numpy()
+        values = values.data[:, self.p].numpy()
         # choose the action that leads to highest valued afterstate (successor)      
         idx = np.random.choice(np.where(values == values.max())[0])
         best_action = indices[idx]
