@@ -53,23 +53,22 @@ class Connect4Environment(object):
     def get_reward(self, reward_function="win-lose-draw"):
         
         if reward_function == "win-lose-draw":
-            reward = np.zeros(shape=(3, 1))
+            reward = np.zeros(shape=(1, 3))
             # This rewarding
             player1_win = self.game.check_win(1)
             player2_win = self.game.check_win(2)
             draw = self.game.check_draw()
-            if player1_win:
-                reward[1] = 1.
-                # print("P1 wins!")
+            if draw:
+                reward[0, 0] = 1.
+                #print("It's a draw game!")
+            elif player1_win:
+                reward[0, 1] = 1.
+                #print("P1 wins!")
             elif player2_win:
-                reward[2] = 1.
-                # print("P2 wins!")
-            elif draw:
-                reward[0] = 1.
-                # print("It's a draw game!")
-            else:
-                pass # print("Not finished ...")
-        return reward.T
+                reward[0, 2] = 1.
+                #print("P2 wins!")
+
+        return reward
 
     def get_successors(self, player):
         """Returns a list of tuples containing afterstates and actions that leads to those afterstates"""

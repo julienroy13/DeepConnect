@@ -141,6 +141,7 @@ class smart(agent):
         values = values.data[:, self.p].numpy()
         # choose the action that leads to highest valued afterstate (successor)   
         best_action = indices[np.argmax(values)]
+
         return best_action
     
     def select_action(self):
@@ -170,7 +171,6 @@ class smart(agent):
         else: 
             error = reward - self.estimator(state)
 
-        """
         for i in range(3):
             _delta = error.data[0, i]
         
@@ -219,7 +219,7 @@ class smart(agent):
                 # reset gradients
                 p.grad.detach_()
                 p.grad.zero_()
-        
+        """
         
         self.I *= self._gamma
 
