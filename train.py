@@ -43,13 +43,14 @@ def play(state, player):
 # example of self-training
 rs = []
 n_trials = 1
+n_episodes = 1000
 for m in range(n_trials):
     estimator = MLP(4*env.game.n_rows*env.game.n_columns, [160], 3, "sigmoid", "glorot", verbose=False)
     candidate = smart(model=estimator, params=params, env=env, p=1)
     opponent = smart(model=estimator, params=params, env=env, p=2)
     
     step = 0
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(n_episodes)):
         # initialise (reset) the environment
         # note: returns the initial state of the environment
         # print("episode-{} start ...".format(i))
