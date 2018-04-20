@@ -30,6 +30,9 @@ class agent(object):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
         torch.save(self.estimator.state_dict(), os.path.join(save_dir, name))
+    
+    def load(self, path):
+        self.estimator.load_state_dict(torch.load(path))
 
 
 class RandomAgent(object):
