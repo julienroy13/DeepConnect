@@ -8,7 +8,7 @@ import utils
 import agent
 import argparse
 
-from env import Connect4, InvalidMove
+from env import Connect4, InvalidMove, Connect4Environment
 
 
 # For some reason, this makes sure the icon can be displayed properly in Windows taskbar
@@ -21,33 +21,18 @@ if platform.system() == "Windows":
 # GUI MANAGER
 class GuiManager(QtWidgets.QWidget):
 
-    def __init__(self, player2):
+    def __init__(self, env, player2=None, player2_type='human', who_starts='flip_coin'):
         super(GuiManager, self).__init__() # Initializes the base class QMainWindow
 
-        # Instanciates a GameOfLife object
-        self.game = Connect4()
-
-        # Loads the opponent
-        self.player2 = player2 # human, random or the name of a saved model (ex: smarty_999.pkl)
-        if self.player2 == 'human':
-            pass
-        
-        elif self.player2 == 'random':
-            self.opponent = agent.RandomAgent()
-        
-            """
-                elif self.player2.endswith('.pkl'):
-                    params = {"epsilon": 0.01, "gamma": 1., "lambda": 0.9, "alpha": 1e-3}
-                    env = Connect4Environment()
-                    estimator = MLP(2*6*7, [160], 3, "sigmoid", "glorot", verbose=True)
-                    self.opponent = agent.smart(model=estimator, params=params, env=env, p=2)
-            """
-
-        else:
-            raise ValueError('Unrecognized player type entered as input.')
+        self.env = env
+        self.player2 = player2
+        self.player2_type = player2_type
+        self.who_starts = who_starts
 
         # Initializes the GUI widgets and layout
         self.setupGUI()
+        self.reset()
+
     
     # WIDGETS AND LAYOUT ----------------------------------------------------------------------------------------------
     def setupGUI(self):
@@ -72,7 +57,7 @@ class GuiManager(QtWidgets.QWidget):
 
         # GraphicView
         self.Image = pg.ImageItem(autoLevels=False)
-        self.Image.mousePressEvent = self.human_add_piece
+        self.Image.mousePressEvent = self.human_add_disk
         self.Plot = pg.PlotWidget(title="Connect4")
         self.Plot.hideAxis("bottom")
         self.Plot.hideAxis("left")
@@ -105,31 +90,41 @@ class GuiManager(QtWidgets.QWidget):
         self.updatePlot()
 
     def reset(self):
-        self.game.reset()
+        self.env.reset()
         self.updatePlot()
+
+        # Decide which player starts the game
+        if self.who_starts == 'flip_coin':
+            self.env.game.turn = np.random.choice([1, 2])
+        else:
+            self.env.game.turn = int(self.who_starts)
+
+        # The bot plays if it starts the game
+        if self.env.game.turn == 2 and self.player2_type != 'human':
+            self.bot_add_disk()
     
-    def human_add_piece(self, event):
-        if not(self.game.over):
-            # Tries to add a piece (if the column isn't full)
+    def human_add_disk(self, event):
+        if not(self.env.game.over):
+            # Tries to add a disk (if the column isn't full)
             try:
                 row = self.getPos(event)
-                self.game.make_move(self.game.turn, row)
-                self.game.check_win(1)
-                self.game.check_win(2)
+                self.env.game.make_move(self.env.game.turn, row)
+                self.env.game.check_win(1)
+                self.env.game.check_win(2)
                 self.updatePlot()
                 
-                if self.player2 != 'human':
+                if self.player2_type != 'human':
                     # Fake thinking delay before playing
-                    QtCore.QTimer.singleShot(np.random.randint(100, 500), lambda: self.bot_add_piece())
+                    QtCore.QTimer.singleShot(np.random.randint(100, 500), lambda: self.bot_add_disk())
 
             except InvalidMove as e:
                 print(e)
 
-    def bot_add_piece(self):
-        if not(self.game.over):
-            opponent_action = self.opponent.select_action(self.game)
-            self.game.make_move(self.game.turn, opponent_action)
-            self.game.check_win(2)
+    def bot_add_disk(self):
+        if not(self.env.game.over):
+            player2_action = self.player2.select_action()
+            self.env.game.make_move(self.env.game.turn, player2_action)
+            self.env.game.check_win(2)
             self.updatePlot()
 
     def getPos(self , event):
@@ -140,7 +135,7 @@ class GuiManager(QtWidgets.QWidget):
 
     def updatePlot(self):
         # Updates the plot with the current state of the game
-        pretty_grid = utils.pad_grid(self.game.grid, self.game.win_indices, self.coeff)
+        pretty_grid = utils.pad_grid(self.env.game.grid, self.env.game.win_indices, self.coeff)
         self.Image.setImage(image=np.transpose(np.flip(pretty_grid, axis=0)))
         self.Image.setLevels([0, 255], update=True)
         return
@@ -151,13 +146,43 @@ class GuiManager(QtWidgets.QWidget):
 
 # If we run the file directly
 if __name__ == '__main__':
+    
+    # ARGPARSE ------
     parser = argparse.ArgumentParser()
-    parser.add_argument('--player2', type=str, default='human',
+    parser.add_argument('--player2_type', type=str, default='human',
                         help='Type of player you are playing against',
                         choices=['human', 'random'])
+    parser.add_argument('--who_starts', type=str, default='flip_coin',
+                        help='Which player starts the game (you are player 1)',
+                        choices=['flip_coin', '1', '2'])
     args = parser.parse_args()
 
+
+    # GAME RELATED STUFF ------
+
+    # Instanciates the environment
+    env = Connect4Environment()
+    params = {"epsilon": 0., "gamma": 1., "lambda": 0.9, "alpha": 1e-3}
+
+    # Loads the player2
+    if args.player2_type == 'human':
+        player2 = None
+    elif args.player2_type == 'random':
+        player2 = agent.random(model=None, params=params, env=env, p=2)
+    
+        """
+            elif self.player2.endswith('.pkl'):
+                params = {"epsilon": 0.01, "gamma": 1., "lambda": 0.9, "alpha": 1e-3}
+                env = Connect4Environment()
+                estimator = MLP(2*6*7, [160], 3, "sigmoid", "glorot", verbose=True)
+                self.opponent = agent.smart(model=estimator, params=params, env=env, p=2)
+        """
+    else:
+        raise ValueError('Unrecognized player type entered as input.')
+
+
+    # LAUNCHES THE GUI -------
     global app
-    app = QtWidgets.QApplication(sys.argv)  # Every PyQt application must create an application object
-    gui = GuiManager(args.player2)           # Create an object "GuiManager"
-    sys.exit(app.exec_())                   # Enter the main loop of the application
+    app = QtWidgets.QApplication(sys.argv)                  # Every PyQt application must create an application object
+    gui = GuiManager(env, player2, args.player2_type, args.who_starts)      # Create an object "GuiManager"
+    sys.exit(app.exec_())                                   # Enter the main loop of the application
