@@ -44,7 +44,7 @@ def play(state, player):
 rs = []
 n_trials = 1
 for m in range(n_trials):
-    estimator = MLP(2*6*7, [160], 3, "sigmoid", "glorot", verbose=True)
+    estimator = MLP(4*env.game.n_rows*env.game.n_columns, [160], 3, "sigmoid", "glorot", verbose=False)
     candidate = smart(model=estimator, params=params, env=env, p=1)
     opponent = smart(model=estimator, params=params, env=env, p=2)
     
@@ -55,7 +55,7 @@ for m in range(n_trials):
         # print("episode-{} start ...".format(i))
         env.reset()
         candidate.reset()
-        state = np.zeros((1, 2*6*7))
+        state = np.zeros((1, 4*env.game.n_rows*env.game.n_columns))
         index = 1
         while not env.game.over:
             if index == 1:
@@ -99,21 +99,23 @@ plt.grid(True, color="lightgrey", linestyle="--")
 plt.show()
 
 # small test against ranom player
-greedy  = greed(model=estimator, params=params, env=env, p=1)
-rand = random(model=None, params=params, env=env, p=2)
+greedy  = greed(model=estimator, params=params, env=env, p=2)
+rand = random(model=None, params=params, env=env, p=1)
 r = 0
 for i in tqdm(range(500)):
     # initialise (reset) the environment
     # note: returns the initial state of the environment
     env.reset()
-    state = np.zeros((1, 2*6*7))
+    state = np.zeros((1, 4*env.game.n_rows*env.game.n_columns))
     index = 1
     while not env.game.over:
-        if index == 1:
+        if index == 2:
             p = greedy
-        elif index == 2:
+        elif index == 1:
             p = rand
         state, reward = play(state, p)
+        if i == 499:
+            env.game.print_grid()
         r = r + reward
         index = (index%2) + 1
 print(r)
