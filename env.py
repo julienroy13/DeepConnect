@@ -15,7 +15,7 @@ class Connect4Environment(object):
 
 	def get_state(self, grid):
 		"""Transform matrix grid representation into a 3D state of one-hot vectors (n_rows x n_columns x 3)"""
-		state = np.stack([grid==0, grid==1, grid==2]).astype(np.int)
+		state = np.stack([grid==-1, grid==0, grid==1, grid==2]).astype(np.int)
 		return state
 
 	def step(self, agent_action):
@@ -103,7 +103,7 @@ class Connect4(object):
 		self.win_streak = win_streak
 
 		# Initializes grid
-		self.grid = np.zeros(shape=(n_rows, n_columns), dtype=np.int)
+		self.grid = np.concatenate([-np.ones(shape=(n_rows-1, n_columns), dtype=np.int), np.zeros(shape=(1, n_columns), dtype=np.int)])
 		self.turn = 1 # Player 1 starts the game
 
 		# Recorder
@@ -137,16 +137,20 @@ class Connect4(object):
 			raise InvalidMove('This move is impossible. Column {} is out of bound.'.format(column))
 
 		# Checks if the column is full (should not happen)
-		if self.grid[0, column] != 0:
+		if self.grid[0, column] > 0:
 			raise InvalidMove('This move is illegal. Column {} is already full.'.format(column))
 
 		for row in range(self.n_rows):
 			# If next row is empty
-			if row+1 < self.n_rows and self.grid[row+1, column] == 0:
+			if self.grid[row, column] == -1:
 				continue # Piece keeps falling
-			else:
+			elif self.grid[row, column] == 0:
 				next_grid[row, column] = player_id
+				if row > 0:
+					next_grid[row-1, column] = 0
 				break # Piece stops here
+			else:
+				raise Exception("Should be a 0 somewhere!!!")
 
 		# Updates the grid only if the move wasn't imaginary 
 		if not imaginary:
@@ -167,7 +171,7 @@ class Connect4(object):
 		valid_columns = []
 		# Checks for every column if we could add at least on additional piece
 		for column in range(self.n_columns):
-			if self.grid[0, column] == 0:
+			if self.grid[0, column] <= 0:
 				valid_columns.append(column)
 
 		return valid_columns
@@ -225,7 +229,7 @@ class Connect4(object):
 
 	def reset(self, record_next_game=False):
 		"""Reset the game engines to prepare for a new match, optionally allows to record the next game"""
-		self.grid = np.zeros(shape=(self.n_rows, self.n_columns))
+		self.grid = np.concatenate([-np.ones(shape=(self.n_rows-1, self.n_columns), dtype=np.int), np.zeros(shape=(1, self.n_columns), dtype=np.int)])
 		self.turn = 1 # Player 1 starts the game
 		self.over = False
 		self.win_type = None # String
@@ -241,8 +245,10 @@ class Connect4(object):
 		for i in range(self.n_rows):
 			row = '|'
 			for j in range(self.n_columns):
-				if self.grid[i,j] == 0:
+				if self.grid[i,j] == -1:
 					row += ' '
+				elif self.grid[i,j] == 0:
+					row += '-'
 				elif self.grid[i,j] == 1:
 					row += '\u25CF'
 				elif self.grid[i,j] == 2:
