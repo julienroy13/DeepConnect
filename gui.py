@@ -110,6 +110,7 @@ class GuiManager(QtWidgets.QWidget):
                 row = self.getPos(event)
                 self.env.game.make_move(self.env.game.turn, row)
                 self.env.game.check_win(1)
+                self.env.game.check_win(2)
                 self.updatePlot()
                 
                 if self.player2_type != 'human':
