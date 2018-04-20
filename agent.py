@@ -171,7 +171,7 @@ class smart(agent):
                 v = self.estimator(Variable(s.view((1, -1)))).cpu().data.numpy()[:, self.p]
             else:
                 # retrieve (query) list of successors
-                tuples = env.get_successors(self.p)
+                tuples = env.get_successors( (self.p%2)+1 )
                 successors, indices = zip(*tuples)
                 indices = np.array(indices)
                 successors = torch.Tensor(np.stack(successors))
@@ -181,7 +181,7 @@ class smart(agent):
                 # compute expected value
                 v = values.numpy()[:, self.p].mean()
             # update best choice of action
-            if v > best_value:
+            if v >= best_value:
                 best_value = v
                 best_action = action
             # undo everything
@@ -217,7 +217,7 @@ class smart(agent):
                 v = self.estimator(Variable(s1.view((1, -1)))).cpu().data.numpy()[:, self.p]
             else:
                 # retrieve (query) list of successors
-                l1_tuples = env.get_successors(self.p)
+                l1_tuples = env.get_successors( (self.p%2)+1 )
                 l1_successors, l1_indices = zip(*l1_tuples)
                 #
                 l1_expectations = []
@@ -252,7 +252,7 @@ class smart(agent):
                 l1_expectations = np.array(l1_expectations)
                 v = l1_expectations.mean()
             # update best choice of action
-            if v > best_value:
+            if v >= best_value:
                 best_value = v
                 best_action = a
             # undo a
@@ -273,31 +273,35 @@ class smart(agent):
     
     def update(self, state, reward, next_state):
         #
-        # reward = reward[:, :2]
-        error = Variable(torch.Tensor(reward)) + ( self._gamma * self.estimator(Variable(torch.Tensor(next_state).view((1, -1))))) - self.estimator(Variable(torch.Tensor(state).view((1, -1)))) if not self.env.game.over else Variable(torch.Tensor(reward)) - self.estimator(Variable(torch.Tensor(state).view((1, -1))))  # estimator(next_state) - estimator(state) if not done else reward - critic(state)
+        r = Variable(torch.Tensor(reward))
+        v_t1 = self.estimator(Variable(torch.Tensor(next_state).view((1, -1))))
+        v_t = self.estimator(Variable(torch.Tensor(state).view((1, -1))))
         #
-        _delta = error.cpu().data[0, self.p]
-        #
-        v = self.estimator(Variable(torch.Tensor(state).view((1, -1))))[0, self.p]
-        v.backward()
-        #
-        for i, group in enumerate(self.optimizer.param_groups):
+        error = r + ( self._gamma * v_t1)  - v_t if not self.env.game.over else r - v_t
+        for i in range(3):
+            #
+            _delta = error.cpu().data[0, i]
+            #
+            v = self.estimator(Variable(torch.Tensor(state).view((1, -1))))[0, i]
+            v.backward()
+            #
+            for i, group in enumerate(self.optimizer.param_groups):
 
-            for p in group["params"]:
-                if p.grad is None:
-                    continue
-                # retrieve current eligibility
-                z = self.eligibilities[i][p]
-                # retrieve current gradient
-                grad = p.grad.data
-                # update eligibility
-                #
-                z.mul_(self._gamma * self._lambda).add_(self.I, grad)
-                # update parameters
-                p.data.add_(self._alpha * _delta * z)
-                # reset gradients
-                p.grad.detach_()
-                p.grad.zero_()
+                for p in group["params"]:
+                    if p.grad is None:
+                        continue
+                    # retrieve current eligibility
+                    z = self.eligibilities[i][p]
+                    # retrieve current gradient
+                    grad = p.grad.data
+                    # update eligibility
+                    #
+                    z.mul_(self._gamma * self._lambda).add_(self.I, grad)
+                    # update parameters
+                    p.data.add_(self._alpha * _delta * z)
+                    # reset gradients
+                    p.grad.detach_()
+                    p.grad.zero_()
         #
         self.I *= self._gamma
 
