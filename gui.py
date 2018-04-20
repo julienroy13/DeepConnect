@@ -5,7 +5,7 @@ import os
 from PyQt5 import QtGui, QtCore, QtWidgets
 import pyqtgraph as pg 
 import utils
-import agent
+from agent import smart, MLP, random
 import argparse
 
 from env import Connect4, InvalidMove, Connect4Environment
@@ -110,7 +110,6 @@ class GuiManager(QtWidgets.QWidget):
                 row = self.getPos(event)
                 self.env.game.make_move(self.env.game.turn, row)
                 self.env.game.check_win(1)
-                self.env.game.check_win(2)
                 self.updatePlot()
                 
                 if self.player2_type != 'human':
@@ -123,7 +122,7 @@ class GuiManager(QtWidgets.QWidget):
     def bot_add_disk(self):
         if not(self.env.game.over):
             player2_action = self.player2.select_action()
-            self.env.game.make_move(self.env.game.turn, player2_action)
+            self.env.game.make_move(2, player2_action)
             self.env.game.check_win(2)
             self.updatePlot()
 
@@ -150,8 +149,7 @@ if __name__ == '__main__':
     # ARGPARSE ------
     parser = argparse.ArgumentParser()
     parser.add_argument('--player2_type', type=str, default='human',
-                        help='Type of player you are playing against',
-                        choices=['human', 'random'])
+                        help='Type of player you are playing against') # 'human', 'random' or 'XXXX.pkl'
     parser.add_argument('--who_starts', type=str, default='flip_coin',
                         help='Which player starts the game (you are player 1)',
                         choices=['flip_coin', '1', '2'])
@@ -165,18 +163,17 @@ if __name__ == '__main__':
     params = {"epsilon": 0., "gamma": 1., "lambda": 0.9, "alpha": 1e-3}
 
     # Loads the player2
+    print(args.player2_type)
+    print(args.player2_type.endswith('.pkl'))
     if args.player2_type == 'human':
         player2 = None
     elif args.player2_type == 'random':
-        player2 = agent.random(model=None, params=params, env=env, p=2)
-    
-        """
-            elif self.player2.endswith('.pkl'):
-                params = {"epsilon": 0.01, "gamma": 1., "lambda": 0.9, "alpha": 1e-3}
-                env = Connect4Environment()
-                estimator = MLP(2*6*7, [160], 3, "sigmoid", "glorot", verbose=True)
-                self.opponent = agent.smart(model=estimator, params=params, env=env, p=2)
-        """
+        player2 = random(model=None, params=params, env=env, p=2) 
+    elif args.player2_type.endswith('.pkl'):
+        estimator = MLP(env.d*env.game.n_rows*env.game.n_columns, [160], 3, "sigmoid", "glorot", verbose=True)
+        player2 = smart(model=estimator, params=params, env=env, p=2)
+        player2.load(os.path.join('models', args.player2_type))
+        
     else:
         raise ValueError('Unrecognized player type entered as input.')
 
