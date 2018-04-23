@@ -172,19 +172,23 @@ class smart(agent):
         else: 
             error = reward - self.estimator(state)
 
-        for i in range(3):
-            _delta = error.data[0, i]
+        # Forward pass
+        values = self.estimator(state)
+
+        for outcome in range(3):
+            _delta = error.data[0, outcome]
         
             # Backpropagates the gradient of the estimation that the agent will win
-            v = self.estimator(state)[0, i]
-            v.backward()
+            v = values[0, outcome]
+            retain = True if outcome < 2 else False
+            v.backward(retain_graph=retain)
             
             # Updates the parameters
             for i, group in enumerate(self.optimizer.param_groups):
 
                 for j, p in enumerate(group["params"]):
                     if p.grad is None:
-                        continue
+                        raise Exception("No gradient for these parameters")
                     # retrieve current eligibility
                     z = self.eligibilities[i][j]
                     # retrieve current gradient
@@ -194,33 +198,13 @@ class smart(agent):
                     # update parameters
                     p.data.add_(self._alpha * _delta * z)
                     # reset gradients
-                    p.grad.detach_()
                     p.grad.zero_()
-        """            
-        _delta = error.data[0, self.p]
-        
-        # Backpropagates the gradient of the estimation that the agent will win
-        v = self.estimator(state)[0, self.p]
-        v.backward()
-        
-        # Updates the parameters
-        for i, group in enumerate(self.optimizer.param_groups):
 
-            for p in group["params"]:
-                if p.grad is None:
-                    continue
-                # retrieve current eligibility
-                z = self.eligibilities[i][p]
-                # retrieve current gradient
-                grad = p.grad.data
-                # update eligibility
-                z.mul_(self._gamma * self._lambda).add_(self.I, grad)
-                # update parameters
-                p.data.add_(self._alpha * _delta * z)
+        # Detach the params from the graph
+        for i, group in enumerate(self.optimizer.param_groups):
+            for j, p in enumerate(group["params"]):
                 # reset gradients
                 p.grad.detach_()
-                p.grad.zero_()
-        """
         
         self.I *= self._gamma
 
