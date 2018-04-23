@@ -18,7 +18,19 @@ class Connect4Environment(object):
 
     def get_state(self, grid):
         """Transform matrix grid representation into a 3D state of one-hot vectors (n_rows x n_columns x 3)"""
-        state = np.stack([grid==-1, grid==0, grid==1, grid==2]).astype(np.int)
+        
+        # Information regarding grid positionning
+        state = np.stack([grid==-1, grid==0, grid==1, grid==2]).astype(np.int).flatten()
+        
+        # Information regarding whose turn it is to play
+        if self.game.turn == 1:
+            turn_info = np.array([0, 1]) # Inverse (on purpose, because it actually looks at afterstates)
+        elif self.game.turn == 2:
+            turn_info = np.array([1, 0]) # Inverse (on purpose, because it actually looks at afterstates)
+        else:
+            raise Exception("Wrong : env.game.turn == {}".format(self.game.turn))
+
+        state = np.concatenate((state, turn_info))
         return state
 
     def step(self, agent_action):
@@ -38,8 +50,7 @@ class Connect4Environment(object):
         return next_state, reward
 
     def play(self, player, action):
-        """Makes a move in the environment for the first player (agent), and then plays for the second player (opponent). 
-            Returns to a reward and a next state"""
+        """Makes a move in the environment for a given player. Returns to a reward and a next state"""
 
         # makes a move and converts resulting grid to state representation
         obs = self.game.make_move(player, action, imaginary=False)
