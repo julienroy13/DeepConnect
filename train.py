@@ -16,7 +16,7 @@ GRAPHS = True
 params = {"epsilon": 0.1, 
           "gamma": 1., 
           "lambda": .5, 
-          "alpha": 4e-3}
+          "alpha": 1e-2}
 
 # environment
 env = Connect4Environment()
@@ -54,7 +54,7 @@ final_errors = np.empty(shape=(1,3))
 final_steps = []
     
 # Instanciate the value network
-estimator = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [160], 3, "relu", "glorot", verbose=True)
+estimator = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [180], 3, "relu", "glorot", verbose=True)
 
 # Instanciates the two players
 player1 = smart(model=estimator, params=params, env=env, p=1)

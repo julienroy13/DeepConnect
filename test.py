@@ -25,7 +25,7 @@ params = {"epsilon": 0.,
           "alpha": None}
 
 # small test against random player
-estimator = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [160], 3, "sigmoid", "glorot", verbose=True)
+estimator = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [180], 3, "sigmoid", "glorot", verbose=True)
 agent  = smart(model=estimator, params=params, env=env, p=1)
 agent.load(os.path.join('models', FILE))
 
@@ -58,7 +58,7 @@ print("Our agent has won : {}/{}".format(int(wins), N_GAMES))
 
 # OUR AGENT VS OUR AGENT
 # small test against random player
-estimator2 = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [160], 3, "sigmoid", "glorot", verbose=True)
+estimator2 = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [180], 3, "sigmoid", "glorot", verbose=True)
 agent2  = smart(model=estimator2, params=params, env=env, p=2)
 agent2.load(os.path.join('models', FILE))
 wins = 0

@@ -171,7 +171,7 @@ if __name__ == '__main__':
     elif args.player2_type == 'random':
         player2 = random(model=None, params=params, env=env, p=2) 
     elif args.player2_type.endswith('.pkl'):
-        estimator = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [160], 3, "sigmoid", "glorot", verbose=True)
+        estimator = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [180], 3, "sigmoid", "glorot", verbose=True)
         player2 = smart(model=estimator, params=params, env=env, p=2)
         player2.load(os.path.join('models', args.player2_type))
         
