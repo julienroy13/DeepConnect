@@ -122,8 +122,8 @@ class smart(agent):
         # initialise critic eligibilities ([re]set to zero(0))
         for i, group in enumerate(self.optimizer.param_groups):
             zs = dict()
-            for p in group["params"]:
-                zs[p] = torch.zeros_like(p.data)
+            for j, p in enumerate(group["params"]):
+                zs[j] = torch.zeros_like(p.data)
             self.eligibilities[i] = zs
     
     def _one_ply(self, env):
@@ -182,11 +182,11 @@ class smart(agent):
             # Updates the parameters
             for i, group in enumerate(self.optimizer.param_groups):
 
-                for p in group["params"]:
+                for j, p in enumerate(group["params"]):
                     if p.grad is None:
                         continue
                     # retrieve current eligibility
-                    z = self.eligibilities[i][p]
+                    z = self.eligibilities[i][j]
                     # retrieve current gradient
                     grad = p.grad.data
                     # update eligibility
