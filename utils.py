@@ -62,5 +62,39 @@ def save_game(recorder, save_dir, win_indices):
         #plt.clim(0, 255)
         plt.imsave(os.path.join(save_dir, "{}.png".format(i)), image, vmin=0, vmax=255)
 
+def plot_all_errors(save_dir, all_errors, final_steps):
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    plt.figure(figsize=(10,4))
+    plt.title("TD errors", fontweight='bold')
+    plt.plot(all_errors[1:, 1], color='blue', label='P1 wins')
+    plt.plot(all_errors[1:, 2], color='orange', label='P2 wins')
+    plt.plot(all_errors[1:, 0], color='green', label='Draw')
+    #plt.vlines(final_steps, ymin=-1, ymax=1, color='grey', linestyle='--', label='Terminal steps')
+    plt.xlabel('Timesteps')
+    plt.ylabel('TD error')
+    plt.legend(loc='best')
+
+    plt.savefig(os.path.join(save_dir, 'errors.png'), bbox_inches='tight')
+    plt.close()
+
+def plot_final_errors(save_dir, final_errors):
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    plt.figure(figsize=(10,4))
+    plt.title("Final TD errors", fontweight='bold')
+    plt.plot(final_errors[1:, 1], color='blue', label='P1 wins')
+    plt.plot(final_errors[1:, 2], color='orange', label='P2 wins')
+    plt.plot(final_errors[1:, 0], color='green', label='Draw')
+    plt.xlabel('Episodes')
+    plt.ylabel('Final TD error')
+    plt.legend(loc='best')
+
+    plt.savefig(os.path.join(save_dir, 'finalerrors.png'), bbox_inches='tight')
+    plt.close()
+
+
 
 
