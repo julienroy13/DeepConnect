@@ -108,23 +108,42 @@ class MLP(nn.Module):
 
         
 class smart(agent):
-    def __init__(self, model, params, env, p=1):
+    def __init__(self, model, params, env, p=1, beta=2.7, eps=1e-8, tcl=False):
         super().__init__(model, params, env, p)
         #
         self.optimizer = torch.optim.SGD(self.estimator.parameters(), lr=self._alpha)
+        self._TCL   = tcl
+        self._beta  = beta
+        self._eps   = eps
         self.reset()
     
     def reset(self):
         #
-        self.eligibilities  = dict()
+        self.eligibilities    = dict()
+        self.net_changes      = dict()  # the algebraic sum of all weight changes (displacement in the parameter space) up to now.
+        self.absolute_changes = dict()  # the absolute sum (sum of absolute values) of all weight changes up to now.
         self.I = 1
 
-        # initialise critic eligibilities ([re]set to zero(0))
+        #
         for i, group in enumerate(self.optimizer.param_groups):
+            
+            # initialise eligibilities ([re]set to zero(0))
+            es = dict()
+            for j, p in enumerate(group["params"]):
+                es[j] = torch.zeros_like(p.data)
+            self.eligibilities[i] = es
+        
+            # initialise net changes ([re]set to zero(0))
+            ns = dict()
+            for j, p in enumerate(group["params"]):
+                ns[j] = torch.zeros_like(p.data)
+            self.net_changes[i] = ns
+
+            # initialise absolute changes ([re]set to zero(0))
             zs = dict()
             for j, p in enumerate(group["params"]):
                 zs[j] = torch.zeros_like(p.data)
-            self.eligibilities[i] = zs
+            self.absolute_changes[i] = zs
     
     def _one_ply(self, env):
         # retrieve (query) list of successors
@@ -196,7 +215,22 @@ class smart(agent):
                     # update eligibility
                     z.mul_(self._gamma * self._lambda).add_(self.I, grad)
                     # update parameters
-                    p.data.add_(self._alpha * _delta * z)
+                    if self._TCL:
+                        # retrive net change and absolute change
+                        n = self.net_changes[i][j]
+                        a = self.absolute_changes[i][j]
+                        # compute learning rate decay
+                        _x = torch.abs(n)/(a + self._eps) 
+                        _lr_decay = torch.exp(self._beta*(_x - 1.))
+                        # apply update
+                        u =  _delta * z
+                        p.data.add_(self._alpha * _lr_decay * u)
+                        # update net change and absolute change
+                        a.add_(torch.abs(u))
+                        n.add_(u)
+                    else:
+                        # regular update
+                        p.data.add_(self._alpha * _delta * z)
                     # reset gradients
                     p.grad.zero_()
 
