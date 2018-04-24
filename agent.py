@@ -108,7 +108,7 @@ class MLP(nn.Module):
 
         
 class smart(agent):
-    def __init__(self, model, params, env, p=1, beta=2.7 tcl=False):
+    def __init__(self, model, params, env, p=1, beta=2.7, tcl=False):
         super().__init__(model, params, env, p)
         #
         self.optimizer = torch.optim.SGD(self.estimator.parameters(), lr=self._alpha)
@@ -240,6 +240,8 @@ class smart(agent):
                 p.grad.detach_()
         
         self.I *= self._gamma
+
+        return error.data.numpy()
 
 
 class random(agent):

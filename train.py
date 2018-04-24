@@ -11,6 +11,8 @@ PLAYER1_LEARNS = True
 PLAYER2_LEARNS = False
 TRAIN_TIME = int(5e3)
 GRAPHS = True
+TCL = True
+FLIP = False
 
 # training parameters
 params = {"epsilon": 0.1, 
@@ -57,8 +59,8 @@ final_steps = []
 estimator = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [180], 3, "relu", "glorot", verbose=True)
 
 # Instanciates the two players
-player1 = smart(model=estimator, params=params, env=env, p=1)
-player2 = smart(model=estimator, params=params, env=env, p=2)
+player1 = smart(model=estimator, params=params, env=env, p=1, tcl=TCL)
+player2 = smart(model=estimator, params=params, env=env, p=2, tcl=TCL)
 #player2 = random(model=estimator, params=params, env=env, p=2)
 total_step = 0
 for i in tqdm(range(TRAIN_TIME)):
@@ -71,14 +73,14 @@ for i in tqdm(range(TRAIN_TIME)):
     # Initial state
     state = np.zeros((1, env.d*env.game.n_rows*env.game.n_columns+2))
 
-    """
-    # Flip coin to redefine who plays as player1 and who plays as player2
-    player1.p = np.random.choice([1, 2])
-    if player1.p == 1:
-        player2.p = 2
-    elif player1.p == 2:
-        player2.p = 1
-    """
+    if FLIP:
+        # Flip coin to redefine who plays as player1 and who plays as player2
+        player1.p = np.random.choice([1, 2])
+        if player1.p == 1:
+            player2.p = 2
+        elif player1.p == 2:
+            player2.p = 1
+
     
     # Throws a coin to decide which player starts the game
     env.game.turn = np.random.choice([1, 2])
