@@ -1,10 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import pdb
 
 def pad_grid(grid, win_indices=None, coeff=21):
 
     grid = grid * 100 # adjust colors
+    grid[grid==0] = -50 # Sets the reachable but empty locations to -50 (to differentiate them from the grid that will be set to 0)
     
     # Put some padding between each element (cause you know.. pretty)
     grid = np.repeat(grid, coeff, axis=0)
@@ -59,8 +61,13 @@ def save_game(recorder, save_dir, win_indices):
         else:
             image = pad_grid(grid, win_indices=None)
 
-        #plt.clim(0, 255)
-        plt.imsave(os.path.join(save_dir, "{}.png".format(i)), image, vmin=0, vmax=255)
+        # Change colors manually according to cmap='nipy_spectral'
+        image[image == -100] = 7        # Dark violet
+        image[image == -50] = 7         # Dark violet
+        image[image == 0] = 5           # Dark gray
+        image[image == 100] = 180       # Yellow
+        image[image == 200] = 220       # Red
+        plt.imsave(os.path.join(save_dir, "{}.png".format(i)), image, vmin=0, vmax=255, cmap='nipy_spectral')
 
 def plot_all_errors(save_dir, all_errors, final_steps):
     if not os.path.exists(save_dir):

@@ -21,16 +21,18 @@ if platform.system() == "Windows":
 # GUI MANAGER
 class GuiManager(QtWidgets.QWidget):
 
-    def __init__(self, env, player2=None, player2_type='human', who_starts='flip_coin'):
+    def __init__(self, env, player2, args):
         super(GuiManager, self).__init__() # Initializes the base class QMainWindow
 
         self.env = env
         self.player2 = player2
-        self.player2_type = player2_type
-        self.who_starts = who_starts
+        self.player2_type = args.player2_type
+        self.who_starts = args.who_starts
 
         # Initializes the GUI widgets and layout
         self.setupGUI()
+        self.game_count = 0
+        self.record = args.record
         self.reset()
 
     
@@ -90,7 +92,11 @@ class GuiManager(QtWidgets.QWidget):
         self.updatePlot()
 
     def reset(self):
-        self.env.reset()
+
+        if self.record and self.game_count > 0:
+            utils.save_game(self.env.game.recorder, os.path.join("gui_games", "{}_game{}".format(self.player2_type.split('.')[0], self.game_count)), env.game.win_indices)
+
+        self.env.game.reset(self.record)
         self.updatePlot()
 
         # Decide which player starts the game
@@ -98,6 +104,8 @@ class GuiManager(QtWidgets.QWidget):
             self.env.game.turn = np.random.choice([1, 2])
         else:
             self.env.game.turn = int(self.who_starts)
+
+        self.game_count += 1
 
         # The bot plays if it starts the game
         if self.env.game.turn == 2 and self.player2_type != 'human':
@@ -154,6 +162,8 @@ if __name__ == '__main__':
     parser.add_argument('--who_starts', type=str, default='flip_coin',
                         help='Which player starts the game (you are player 1)',
                         choices=['flip_coin', '1', '2'])
+    parser.add_argument('--record', type=bool, default=False,
+                        help='Should the games be recorded')
     args = parser.parse_args()
 
 
@@ -171,7 +181,7 @@ if __name__ == '__main__':
     elif args.player2_type == 'random':
         player2 = random(model=None, params=params, env=env, p=2) 
     elif args.player2_type.endswith('.pkl'):
-        estimator = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [180], 3, "sigmoid", "glorot", verbose=True)
+        estimator = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [160], 3, "sigmoid", "glorot", verbose=True)
         player2 = smart(model=estimator, params=params, env=env, p=2)
         player2.load(os.path.join('models', args.player2_type))
         
@@ -181,6 +191,6 @@ if __name__ == '__main__':
 
     # LAUNCHES THE GUI -------
     global app
-    app = QtWidgets.QApplication(sys.argv)                  # Every PyQt application must create an application object
-    gui = GuiManager(env, player2, args.player2_type, args.who_starts)      # Create an object "GuiManager"
-    sys.exit(app.exec_())                                   # Enter the main loop of the application
+    app = QtWidgets.QApplication(sys.argv)          # Every PyQt application must create an application object
+    gui = GuiManager(env, player2, args)            # Create an object "GuiManager"
+    sys.exit(app.exec_())                           # Enter the main loop of the application
