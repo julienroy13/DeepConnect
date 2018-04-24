@@ -6,19 +6,42 @@ from env import Connect4Environment
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 import pdb
+import json
+import os
+import torch
 
-PLAYER1_LEARNS = True
-PLAYER2_LEARNS = False
-TRAIN_TIME = int(5e3)
-GRAPHS = True
-TCL = True
-FLIP = False
+options = {
+    "PLAYER1_LEARNS" : True,
+    "PLAYER2_LEARNS" : False,
+    "TRAIN_TIME" : int(5e3),
+    "GRAPHS" : True,
+    "TCL" : True,
+    "FLIP" : False,
+    "TRAIN_VS_RANDOM" : False,
+    "EXP_NAME" : "TCL",
+    "SEED" : 1234}
+
 
 # training parameters
 params = {"epsilon": 0.1, 
           "gamma": 1., 
           "lambda": .5, 
           "alpha": 1e-2}
+
+
+# Initializes the seeds
+np.random.seed(options['SEED'])
+torch.manual_seed(options['SEED'])
+
+# Creates saving directory
+save_dir = os.path.join('experiments', options['EXP_NAME'])
+if not os.path.exists(save_dir):
+    os.makedirs(save_dir)
+
+# Writes parameters to text file
+with open(os.path.join(save_dir, 'hyperparams.txt'), 'w+') as hyperparam_file:
+    json.dump(options, hyperparam_file, indent=2)
+    json.dump(params, hyperparam_file, indent=2)
 
 # environment
 env = Connect4Environment()
@@ -59,21 +82,25 @@ final_steps = []
 estimator = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [180], 3, "relu", "glorot", verbose=True)
 
 # Instanciates the two players
-player1 = smart(model=estimator, params=params, env=env, p=1, tcl=TCL)
-player2 = smart(model=estimator, params=params, env=env, p=2, tcl=TCL)
-#player2 = random(model=estimator, params=params, env=env, p=2)
+player1 = smart(model=estimator, params=params, env=env, p=1, tcl=options['TCL'])
+if options['TRAIN_VS_RANDOM'] : 
+    player2 = random(model=estimator, params=params, env=env, p=2)
+else:
+    player2 = smart(model=estimator, params=params, env=env, p=2, tcl=options['TCL'])
+
+# TRAINING LOOP
 total_step = 0
-for i in tqdm(range(TRAIN_TIME)):
+for i in tqdm(range(options['TRAIN_TIME'])):
     
     # Resets the environment and the player1's eligibility trace
     env.reset()
-    if PLAYER1_LEARNS: player1.reset()
-    if PLAYER2_LEARNS: player2.reset()
+    if options['PLAYER1_LEARNS']: player1.reset()
+    if options['PLAYER2_LEARNS']: player2.reset()
 
     # Initial state
     state = np.zeros((1, env.d*env.game.n_rows*env.game.n_columns+2))
 
-    if FLIP:
+    if options['FLIP']:
         # Flip coin to redefine who plays as player1 and who plays as player2
         player1.p = np.random.choice([1, 2])
         if player1.p == 1:
@@ -99,25 +126,25 @@ for i in tqdm(range(TRAIN_TIME)):
             raise Exception("It is supposed to be either player 1's or 2's turn")
 
         # Learning step
-        if PLAYER1_LEARNS: error = player1.update(state, reward, next_state)
-        if PLAYER2_LEARNS: error = player2.update(state, reward, next_state)
+        if options['PLAYER1_LEARNS']: error = player1.update(state, reward, next_state)
+        if options['PLAYER2_LEARNS']: error = player2.update(state, reward, next_state)
 
         # Saves the error for graph
-        if GRAPHS : all_errors = np.concatenate((all_errors, error), axis=0)
+        if options['GRAPHS'] : all_errors = np.concatenate((all_errors, error), axis=0)
         
         # Ends the current step
         state = next_state
         total_step += 1
     
     # Saves the final error for graph
-    if GRAPHS : final_errors = np.concatenate((final_errors, error), axis=0)
-    if GRAPHS : final_steps.append(total_step)
+    if options['GRAPHS'] : final_errors = np.concatenate((final_errors, error), axis=0)
+    if options['GRAPHS'] : final_steps.append(total_step)
     rewards.append(reward)
 
     if i+1 in [1e3, 2e3, 3e3, 4e3, 5e3, 1e4, 2e4, 5e4, 1e5, 2e5, 3e5, 4e5, 5e5, 6e5, 7e5, 8e5, 9e5, 1e6]:
-        player1.save('models', 'Tests_{}k.pkl'.format(int((i+1)/1e3)))
+        player1.save(save_dir, options['EXP_NAME']+'_{}k.pkl'.format(int((i+1)/1e3)))
         count_wins(rewards)
-        if GRAPHS : utils.plot_all_errors("graphs", all_errors, final_steps)
-        if GRAPHS : utils.plot_final_errors("graphs", final_errors)
+        if options['GRAPHS'] : utils.plot_all_errors(save_dir, all_errors, final_steps)
+        if options['GRAPHS'] : utils.plot_final_errors(save_dir, final_errors)
 
 print("\nP1 started {} times\nP2 started {} times\n".format((np.array(started_game)==1).sum(), (np.array(started_game)==2).sum()))

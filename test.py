@@ -9,7 +9,7 @@ import os
 import utils
 
 N_GAMES = 100
-FILE = 'FlipPlayers_2k.pkl'
+FILE = 'TCL_2k.pkl'
 
 def play(state, player):
     action = player.select_action()
@@ -27,7 +27,7 @@ params = {"epsilon": 0.,
 # small test against random player
 estimator = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [180], 3, "sigmoid", "glorot", verbose=True)
 agent  = smart(model=estimator, params=params, env=env, p=1)
-agent.load(os.path.join('models', FILE))
+agent.load(os.path.join('experiments', FILE.split('_')[0], FILE))
 
 randy = random(model=None, params=params, env=env, p=2)
 
@@ -60,7 +60,7 @@ print("Our agent has won : {}/{}".format(int(wins), N_GAMES))
 # small test against random player
 estimator2 = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [180], 3, "sigmoid", "glorot", verbose=True)
 agent2  = smart(model=estimator2, params=params, env=env, p=2)
-agent2.load(os.path.join('models', FILE))
+agent2.load(os.path.join('experiments', FILE.split('_')[0], FILE))
 wins = 0
 for i in tqdm(range(N_GAMES)):
     
