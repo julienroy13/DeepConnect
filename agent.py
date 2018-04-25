@@ -108,13 +108,14 @@ class MLP(nn.Module):
 
         
 class smart(agent):
-    def __init__(self, model, params, env, p=1, beta=2.7, eps=1e-8, tcl=False):
+    def __init__(self, model, params, env, p=1, beta=2.7, eps=1e-8, tcl=False, break_ties='random'):
         super().__init__(model, params, env, p)
         #
         self.optimizer = torch.optim.SGD(self.estimator.parameters(), lr=self._alpha)
         self._TCL   = tcl
         self._beta  = beta
         self._eps   = eps
+        self.break_ties = break_ties
         self.reset()
     
     def reset(self):
@@ -160,7 +161,11 @@ class smart(agent):
         values = self.estimator(successors)
         values = values.data[:, self.p].numpy()
         # choose the action that leads to highest valued afterstate (successor)   
-        best_action = indices[np.argmax(values)]
+        if self.break_ties == 'argmax':
+            best_action = indices[np.argmax(values)]
+        elif self.break_ties == 'random':
+            idx = np.random.choice(np.where(values == values.max())[0])
+            best_action = indices[idx]
 
         return best_action
     

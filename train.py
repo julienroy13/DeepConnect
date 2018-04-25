@@ -17,16 +17,18 @@ options = {
     "GRAPHS" : True,
     "TCL" : False, # False, 'v1' or 'v2'
     "FLIP" : False,
-    "TRAIN_VS_RANDOM" : True,
-    "EXP_NAME" : "vsRandNoTurnInfo",
+    "TRAIN_VS_RANDOM" : False,
+    "EXP_NAME" : "BasicBreakTiesRandom",
     "SEED" : 1234,
-    "TURN_INFO" : False}
+    "TURN_INFO" : True,
+    "BREAK_TIES" : 'random' # 'random' or 'argmax'
+    }
 
 
 # training parameters
 params = {"epsilon": 0.1, 
           "gamma": 1., 
-          "lambda": 0., 
+          "lambda": 0.5, 
           "alpha": 1e-2}
 
 
@@ -83,11 +85,11 @@ final_steps = []
 estimator = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [180], 3, "relu", "glorot", verbose=True)
 
 # Instanciates the two players
-player1 = smart(model=estimator, params=params, env=env, p=1, tcl=options['TCL'])
+player1 = smart(model=estimator, params=params, env=env, p=1, tcl=options['TCL'], break_ties=options['BREAK_TIES'])
 if options['TRAIN_VS_RANDOM'] : 
     player2 = random(model=estimator, params=params, env=env, p=2)
 else:
-    player2 = smart(model=estimator, params=params, env=env, p=2, tcl=options['TCL'])
+    player2 = smart(model=estimator, params=params, env=env, p=2, tcl=options['TCL'], break_ties=options['BREAK_TIES'])
 
 # TRAINING LOOP
 total_step = 0
