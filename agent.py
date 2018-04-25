@@ -108,12 +108,13 @@ class MLP(nn.Module):
 
         
 class smart(agent):
-    def __init__(self, model, params, env, p=1, beta=2.7, tcl=False):
+    def __init__(self, model, params, env, p=1, beta=2.7, eps=1e-8, tcl=False):
         super().__init__(model, params, env, p)
         #
         self.optimizer = torch.optim.SGD(self.estimator.parameters(), lr=self._alpha)
         self._TCL   = tcl
         self._beta  = beta
+        self._eps   = eps
         self.reset()
     
     def reset(self):
@@ -214,12 +215,15 @@ class smart(agent):
                     # update eligibility
                     z.mul_(self._gamma * self._lambda).add_(self.I, grad)
                     # update parameters
-                    if self._TCL:
+                    if self._TCL != False:
                         # retrive net change and absolute change
                         n = self.net_changes[i][j]
                         a = self.absolute_changes[i][j]
                         # compute learning rate decay
-                        _x = torch.abs(n)/a if (a>0).all() else torch.ones_like(p.data)
+                        if self._TCL == 'v1':
+                            _x = torch.abs(n)/(a + self._eps)
+                        elif self._TCL == 'v2':
+                            a if (a>0).all() else torch.ones_like(p.data)
                         _lr_decay = torch.exp(self._beta*(_x - 1.))
                         # apply update
                         u =  _delta * z

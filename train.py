@@ -15,17 +15,18 @@ options = {
     "PLAYER2_LEARNS" : False,
     "TRAIN_TIME" : int(5e3),
     "GRAPHS" : True,
-    "TCL" : True,
+    "TCL" : False, # False, 'v1' or 'v2'
     "FLIP" : False,
-    "TRAIN_VS_RANDOM" : False,
-    "EXP_NAME" : "TCL",
-    "SEED" : 1234}
+    "TRAIN_VS_RANDOM" : True,
+    "EXP_NAME" : "vsRandNoTurnInfo",
+    "SEED" : 1234,
+    "TURN_INFO" : False}
 
 
 # training parameters
 params = {"epsilon": 0.1, 
           "gamma": 1., 
-          "lambda": .5, 
+          "lambda": 0., 
           "alpha": 1e-2}
 
 
@@ -44,7 +45,7 @@ with open(os.path.join(save_dir, 'hyperparams.txt'), 'w+') as hyperparam_file:
     json.dump(params, hyperparam_file, indent=2)
 
 # environment
-env = Connect4Environment()
+env = Connect4Environment(turn_info=options['TURN_INFO'])
 
 def play(state, player):
     action = player.select_action()

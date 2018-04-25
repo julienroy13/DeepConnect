@@ -9,12 +9,13 @@ import utils
 class Connect4Environment(object):
     """A class that wraps around the Connect4 game engine to accomodate a RL agent"""
 
-    def __init__(self, n_rows=6, n_columns=7, win_streak=4):
+    def __init__(self, n_rows=6, n_columns=7, win_streak=4, turn_info=True):
 
         self.game = Connect4(n_rows, n_columns, win_streak)
 
         # The dimensionality of the board representation for each location
         self.d = 4
+        self.turn_info = turn_info
 
     def get_state(self, grid):
         """Transform matrix grid representation into a 3D state of one-hot vectors (n_rows x n_columns x 3)"""
@@ -29,6 +30,9 @@ class Connect4Environment(object):
             turn_info = np.array([1, 0]) # Inverse (on purpose, because it actually looks at afterstates)
         else:
             raise Exception("Wrong : env.game.turn == {}".format(self.game.turn))
+
+        if self.turn_info == False:
+            turn_info = np.array([0, 0])
 
         state = np.concatenate((state, turn_info))
         return state
