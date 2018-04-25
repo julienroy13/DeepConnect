@@ -18,10 +18,11 @@ options = {
     "TCL" : False, # False, 'v1' or 'v2'
     "FLIP" : False,
     "TRAIN_VS_RANDOM" : False,
-    "EXP_NAME" : "BasicBreakTiesRandom",
+    "EXP_NAME" : "Basic180-50",
     "SEED" : 1234,
     "TURN_INFO" : True,
-    "BREAK_TIES" : 'random' # 'random' or 'argmax'
+    "BREAK_TIES" : 'random', # 'random' or 'argmax'
+    "HIDDEN_LAYERS" : [180, 50]
     }
 
 
@@ -82,7 +83,7 @@ final_errors = np.empty(shape=(1,3))
 final_steps = []
     
 # Instanciate the value network
-estimator = MLP(env.d*env.game.n_rows*env.game.n_columns+2, [180], 3, "relu", "glorot", verbose=True)
+estimator = MLP(env.d*env.game.n_rows*env.game.n_columns+2, options['HIDDEN_LAYERS'], 3, "relu", "glorot", verbose=True)
 
 # Instanciates the two players
 player1 = smart(model=estimator, params=params, env=env, p=1, tcl=options['TCL'], break_ties=options['BREAK_TIES'])
