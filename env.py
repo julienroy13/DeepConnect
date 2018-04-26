@@ -263,7 +263,9 @@ class Connect4(object):
         for i in range(self.n_rows):
             row = '|'
             for j in range(self.n_columns):
-                if self.grid[i,j] == 0 or self.grid[i,j] == -1:
+                if self.grid[i,j] == -1:
+                    row += 'x'
+                elif self.grid[i,j] == 0
                     row += ' '
                 elif self.grid[i,j] == 1:
                     row += '\u25CF'
