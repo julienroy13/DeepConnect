@@ -119,13 +119,11 @@ class smart(agent):
         self.reset()
     
     def reset(self):
-        #
         self.eligibilities    = dict()
         self.net_changes      = dict()  # the algebraic sum of all weight changes (displacement in the parameter space) up to now.
         self.absolute_changes = dict()  # the absolute sum (sum of absolute values) of all weight changes up to now.
         self.I = 1
 
-        #
         for i, group in enumerate(self.optimizer.param_groups):
             
             # initialise eligibilities ([re]set to zero(0))
@@ -146,21 +144,18 @@ class smart(agent):
                 zs[j] = torch.zeros_like(p.data)
             self.absolute_changes[i] = zs
     
-    def _one_ply(self, env):
-        # retrieve (query) list of successors
-        # - indices (of implicit action/columns picked in the game):
-        #                shape [n_successors, n_channels=1, height=1, width=1]
-        # - successsors: shape [n_successors, n_channels=3, height, width]
+    def _one_ply(self, env):        
+        # Queries a list of all legal moves and successors
         tuples = env.get_successors(self.p)
         successors, indices = zip(*tuples)
         indices = np.array(indices)
         successors = Variable(torch.Tensor(np.stack(successors)).view((-1, self.env.d * self.env.game.n_rows * self.env.game.n_columns + 2)))
-        #pdb.set_trace()
-        # evaluate successors
-        # - values: shape [n_successors, n_channels=1, height=1, width=1]
+        
+        # Evaluates all legal afterstates (successors)
         values = self.estimator(successors)
         values = values.data[:, self.p].numpy()
-        # choose the action that leads to highest valued afterstate (successor)   
+        
+        # Chooses the action that leads to highest valued afterstate (successor)   
         if self.break_ties == 'argmax':
             best_action = indices[np.argmax(values)]
         elif self.break_ties == 'random':
@@ -228,7 +223,7 @@ class smart(agent):
                         if self._TCL == 'v1':
                             _x = torch.abs(n)/(a + self._eps)
                         elif self._TCL == 'v2':
-                            a if (a>0).all() else torch.ones_like(p.data)
+                            _x = torch.abs(n)/a if (a>0).all() else torch.ones_like(p.data)
                         _lr_decay = torch.exp(self._beta*(_x - 1.))
                         # apply update
                         u =  _delta * z

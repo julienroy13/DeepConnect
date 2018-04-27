@@ -18,11 +18,11 @@ options = {
     "TCL" : False, # False, 'v1' or 'v2'
     "FLIP" : False,
     "TRAIN_VS_RANDOM" : False,
-    "EXP_NAME" : "Basic180-50",
+    "EXP_NAME" : "Test",
     "SEED" : 1234,
     "TURN_INFO" : True,
     "BREAK_TIES" : 'random', # 'random' or 'argmax'
-    "HIDDEN_LAYERS" : [180, 50]
+    "HIDDEN_LAYERS" : [180]
     }
 
 
@@ -31,7 +31,6 @@ params = {"epsilon": 0.1,
           "gamma": 1., 
           "lambda": 0.5, 
           "alpha": 1e-2}
-
 
 # Initializes the seeds
 np.random.seed(options['SEED'])
@@ -49,12 +48,6 @@ with open(os.path.join(save_dir, 'hyperparams.txt'), 'w+') as hyperparam_file:
 
 # environment
 env = Connect4Environment(turn_info=options['TURN_INFO'])
-
-def play(state, player):
-    action = player.select_action()
-    next_state, reward = env.play(player.p, action)
-
-    return next_state, reward
 
 def count_wins(rewards):
     # counts the number of wins
@@ -101,30 +94,37 @@ for i in tqdm(range(options['TRAIN_TIME'])):
     if options['PLAYER1_LEARNS']: player1.reset()
     if options['PLAYER2_LEARNS']: player2.reset()
 
-    # Initial state
-    state = np.zeros((1, env.d*env.game.n_rows*env.game.n_columns+2))
-
     if options['FLIP']:
-        # Flip coin to redefine who plays as player1 and who plays as player2
+        # Flip coin every game to redefine who plays as player1 and who plays as player2
         player1.p = np.random.choice([1, 2])
         if player1.p == 1:
             player2.p = 2
         elif player1.p == 2:
             player2.p = 1
-
     
     # Throws a coin to decide which player starts the game
     env.game.turn = np.random.choice([1, 2])
     started_game.append(env.game.turn)
 
+    # Initial state
+    state = np.zeros(shape=(1, env.d*env.game.n_rows*env.game.n_columns+2))
+    if env.game.turn == 1:
+        state[0, -2] = 1.
+    elif env.game.turn == 2:
+        state[0, -1] = 1.
+
+    # EPISODE LOOP (until termination)
     while not env.game.over:
+
         # If is the turn of player 1
         if env.game.turn == player1.p:
-            next_state, reward = play(state, player1)                    
+            action = player1.select_action()
+            next_state, reward = env.play(player1.p, action)                  
         
         # If is the turn of player 2
         elif env.game.turn == player2.p:
-            next_state, reward = play(state, player2)
+            action = player2.select_action()
+            next_state, reward = env.play(player2.p, action)
 
         else:
             raise Exception("It is supposed to be either player 1's or 2's turn")

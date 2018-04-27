@@ -17,50 +17,34 @@ class Connect4Environment(object):
         self.d = 4
         self.turn_info = turn_info
 
-    def get_state(self, grid):
+    def get_state(self, grid, turn_id):
         """Transform matrix grid representation into a 3D state of one-hot vectors (n_rows x n_columns x 3)"""
         
         # Information regarding grid positionning
         state = np.stack([grid==-1, grid==0, grid==1, grid==2]).astype(np.int).flatten()
         
         # Information regarding whose turn it is to play
-        if self.game.turn == 1:
-            turn_info = np.array([0, 1]) # Inverse (on purpose, because it actually looks at afterstates)
-        elif self.game.turn == 2:
-            turn_info = np.array([1, 0]) # Inverse (on purpose, because it actually looks at afterstates)
+        if turn_id == 1:
+            turn_info = np.array([1., 0.])
+        elif turn_id == 2:
+            turn_info = np.array([0., 1.])
         else:
-            raise Exception("Wrong : env.game.turn == {}".format(self.game.turn))
+            raise Exception("Invalid : turn_id == {}".format(turn_id))
 
         if self.turn_info == False:
             turn_info = np.array([0, 0])
 
-        state = np.concatenate((state, turn_info))
+        state = np.expand_dims(np.concatenate((state, turn_info)), axis=0)
         return state
 
-    def step(self, agent_action):
-        """Makes a move in the environment for the first player (agent), and then plays for the second player (opponent). 
-            Returns to a reward and a next state"""
+    def play(self, player_id, action):
+        """Makes a move in the environment for a given player. Returns a reward and a next state"""
 
-        # Moves for player 1 (agent)
-        self.game.make_move(1, agent_action, imaginary=False)
+        # Makes a move and converts resulting grid to state representation
+        obs = self.game.make_move(player_id, action, imaginary=False)
+        next_state = self.get_state(obs, turn_id=self.game.turn)
 
-        # Moves for player 2 (opponent)
-        opponent_action = self.get_opponent_move(opponent_policy="random")
-        next_state = self.get_state(self.game.make_move(2, opponent_action, imaginary=False))
-
-        # gets the reward according to a chosen reward function (mode)
-        reward = self.get_reward(reward_function="win-lose-draw")
-
-        return next_state, reward
-
-    def play(self, player, action):
-        """Makes a move in the environment for a given player. Returns to a reward and a next state"""
-
-        # makes a move and converts resulting grid to state representation
-        obs = self.game.make_move(player, action, imaginary=False)
-        next_state = self.get_state(obs)
-
-        # gets the reward according to a chosen reward function (mode)
+        # Gets the reward according to a chosen reward function (mode)
         reward = self.get_reward(reward_function="win-lose-draw")
 
         return next_state, reward
@@ -69,31 +53,37 @@ class Connect4Environment(object):
         
         if reward_function == "win-lose-draw":
             reward = np.zeros(shape=(1, 3))
-            # This rewarding
+            
+            # Checks who wins and designs the reward (label) accordingly
             player1_win = self.game.check_win(1)
             player2_win = self.game.check_win(2)
             draw = self.game.check_draw()
             if draw:
                 reward[0, 0] = 1.
-                #print("It's a draw game!")
             elif player1_win:
                 reward[0, 1] = 1.
-                #print("P1 wins!")
             elif player2_win:
                 reward[0, 2] = 1.
-                #print("P2 wins!")
 
         return reward
 
-    def get_successors(self, player):
+    def get_successors(self, player_id):
         """Returns a list of tuples containing afterstates and actions that leads to those afterstates"""
 
         afterstates = [] # list of tuples (successor, action)
         valid_actions = self.game.get_valid_moves()
+
+        # Here we inverse the turn_id because we actually look at afterstates
+        if self.game.turn == 1:
+            inv_turn_id = 2
+        elif self.game.turn == 2:
+            inv_turn_id = 1
+        else:
+            raise Exception("Invalid : self.game.turn == {}".format(self.game.turn))
         
         for action in valid_actions:
-            successor = self.game.make_move(player, action, imaginary=True) # the state of the world won't be modified (here we only simulate)
-            successor_state = self.get_state(successor)
+            successor = self.game.make_move(player_id, action, imaginary=True) # imaginary=True means that the state of the world won't be modified
+            successor_state = self.get_state(successor, turn_id=inv_turn_id)
             afterstates.append((successor_state, action))
 
         return afterstates
@@ -167,17 +157,17 @@ class Connect4(object):
                 break # Piece stops here
             else:
                 raise Exception("COLLISION : There should be a layer of 0s above any piece in the grid")
-
-        # Updates the grid only if the move wasn't imaginary 
+        
         if not imaginary:
+            # Updates the grid (only if the move wasn't imaginary)
             self.grid = next_grid
             self.recorder.append(self.grid)
 
-        # Updates whose turn it is to play
-        if player_id == 1:
-            self.turn = 2
-        elif player_id == 2:
-            self.turn = 1
+            # Updates whose turn it is to play (only if the move wasn't imaginary)
+            if player_id == 1:
+                self.turn = 2
+            elif player_id == 2:
+                self.turn = 1
 
         return next_grid
 
