@@ -13,16 +13,18 @@ import torch
 options = {
     "PLAYER1_LEARNS" : True,
     "PLAYER2_LEARNS" : False,
-    "TRAIN_TIME" : int(5e3),
-    "GRAPHS" : True,
+    "TRAIN_TIME" : int(10e3),
+    "GRAPH_allErrors" : True,
+    "GRAPH_lastErrors" : True,
     "TCL" : False, # False, 'v1' or 'v2'
     "FLIP" : False,
-    "TRAIN_VS_RANDOM" : False,
-    "EXP_NAME" : "Test",
+    "TRAIN_VS_RANDOM" : True,
+    "EXP_NAME" : "TerminalRandom",
     "SEED" : 1234,
     "TURN_INFO" : True,
     "BREAK_TIES" : 'random', # 'random' or 'argmax'
-    "HIDDEN_LAYERS" : [180]
+    "HIDDEN_LAYERS" : [180],
+    "TERMINAL_UPDATE" : True,
     }
 
 
@@ -30,7 +32,7 @@ options = {
 params = {"epsilon": 0.1, 
           "gamma": 1., 
           "lambda": 0.5, 
-          "alpha": 1e-2}
+          "alpha": 4e-3}
 
 # Initializes the seeds
 np.random.seed(options['SEED'])
@@ -130,25 +132,29 @@ for i in tqdm(range(options['TRAIN_TIME'])):
             raise Exception("It is supposed to be either player 1's or 2's turn")
 
         # Learning step
-        if options['PLAYER1_LEARNS']: error = player1.update(state, reward, next_state)
-        if options['PLAYER2_LEARNS']: error = player2.update(state, reward, next_state)
+        if options['PLAYER1_LEARNS']: error = player1.update(state, next_state)
+        if options['PLAYER2_LEARNS']: error = player2.update(state, next_state)
 
         # Saves the error for graph
-        if options['GRAPHS'] : all_errors = np.concatenate((all_errors, error), axis=0)
+        if options['GRAPH_allErrors'] : all_errors = np.concatenate((all_errors, error), axis=0)
         
         # Ends the current step
         state = next_state
         total_step += 1
+
+    # Terminal update
+    if options['PLAYER1_LEARNS'] and options["TERMINAL_UPDATE"]: error = player1.update(state, state, reward, terminal=True)
+    if options['PLAYER2_LEARNS'] and options["TERMINAL_UPDATE"]: error = player2.update(state, state, reward, terminal=True)
     
     # Saves the final error for graph
-    if options['GRAPHS'] : final_errors = np.concatenate((final_errors, error), axis=0)
-    if options['GRAPHS'] : final_steps.append(total_step)
+    if options['GRAPH_lastErrors'] : final_errors = np.concatenate((final_errors, error), axis=0)
+    if options['GRAPH_allErrors'] : final_steps.append(total_step)
     rewards.append(reward)
 
-    if i+1 in [1e3, 2e3, 3e3, 4e3, 5e3, 1e4, 2e4, 5e4, 1e5, 2e5, 3e5, 4e5, 5e5, 6e5, 7e5, 8e5, 9e5, 1e6]:
+    if i+1 in [1.0e3, 2e3, 3e3, 4e3, 5e3, 1e4, 2e4, 5e4, 1e5, 1.5e5, 2e5, 2.5e5, 3e5, 3.5e5, 4e5, 4.5e5, 5e5, 6e5, 7e5, 8e5, 9e5, 1e6]:
         player1.save(save_dir, options['EXP_NAME']+'_{}k.pkl'.format(int((i+1)/1e3)))
         count_wins(rewards)
-        if options['GRAPHS'] : utils.plot_all_errors(save_dir, all_errors, final_steps)
-        if options['GRAPHS'] : utils.plot_final_errors(save_dir, final_errors)
+        if options['GRAPH_allErrors'] : utils.plot_all_errors(save_dir, all_errors, final_steps)
+        if options['GRAPH_lastErrors'] : utils.plot_final_errors(save_dir, final_errors)
 
 print("\nP1 started {} times\nP2 started {} times\n".format((np.array(started_game)==1).sum(), (np.array(started_game)==2).sum()))

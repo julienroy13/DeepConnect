@@ -178,17 +178,17 @@ class smart(agent):
         
         return action
     
-    def update(self, state, reward, next_state):
+    def update(self, state, next_state, reward=None, terminal=False):
         
         # Transforms states ndarrays into Torch Vectors
         state = Variable(torch.Tensor(state).view((1, self.env.d * self.env.game.n_rows * self.env.game.n_columns + 2)))
         next_state = Variable(torch.Tensor(next_state).view((1, self.env.d * self.env.game.n_rows * self.env.game.n_columns + 2)))
-        reward = Variable(torch.Tensor(reward))
 
         # Computes the temporal difference (TD error)
-        if not self.env.game.over:
-            error = reward + (self._gamma * self.estimator(next_state)) - self.estimator(state)
-        else: 
+        if not terminal:
+            error = (self._gamma * self.estimator(next_state)) - self.estimator(state)
+        else:
+            reward = Variable(torch.Tensor(reward))
             error = reward - self.estimator(state)
 
         # Forward pass
